@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Patients - RDV ORL - Firebase</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+    .container { max-width: 1000px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #2c3e50; margin-top: 0; }
+    h2 { color: #3498db; margin-top: 20px; }
+    
+    /* Form styles */
+    .form-patient { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    input, select, textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+    input[type="text"] { flex: 1; }
+    button { background-color: #3498db; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #2980b9; }
+    
+    /* Radio buttons */
+    .radio-group { display: flex; gap: 15px; margin: 10px 0; }
+    
+    /* Table styles */
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #f2f2f2; }
+    tr:hover { background-color: #f9f9f9; }
+    
+    /* Status colors */
+    tr.essai-immediat { background-color: #c8e6c9; }
+    tr.essai-differe { background-color: #ffe0b2; }
+    tr.patient-rdv-patient { background-color: #e8e6ff; } /* This is purple */
+    tr.patient-rdv-centre { background-color: #e8e6ff; } /* Change this to purple as well */
+    tr.urgent { background-color: #ffcdd2; }
+    tr.warning { background-color: #ffe082; }
+    
+    /* Style pour les patients facturés dans le tableau principal */
+    tr.facture {
+      background-image: linear-gradient(45deg,
+        #8B4513 25%,
+        #A0522D 25%,
+        #A0522D 50%,
+        #8B4513 50%,
+        #8B4513 75%,
+        #A0522D 75%,
+        #A0522D 100%
+      );
+      background-size: 20px 20px;
+      color: white; /* Pour assurer la lisibilité du texte */
+    }
+
+    /* Amélioration de la lisibilité au survol */
+    tr.facture:hover {
+      background-image: linear-gradient(45deg,
+        #704214 25%,
+        #8B4513 25%,
+        #8B4513 50%,
+        #704214 50%,
+        #704214 75%,
+        #8B4513 75%,
+        #8B4513 100%
+      );
+    }
+
+    /* Style pour le tableau dédié aux patients facturés */
+    .suivi-table.facture h3 {
+      color: #e74c3c; /* Rouge pour le titre */
+    }
+    
+    /* Notification styles */
+    #notification { position: fixed; bottom: 20px; right: 20px; padding: 15px; border-radius: 4px; color: #fff; font-weight: bold; display: none; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1001; }
+    #notification.success { background-color: #2ecc71; }
+    #notification.error { background-color: #e74c3c; }
+    #notification.info { background-color: #3498db; }
+    
+    /* Action buttons */
+    .action-buttons { display: flex; gap: 5px; flex-wrap: wrap; }
+    .btn-essai-differe { background-color: #f39c12; }
+    .btn-essai-differe:hover { background-color: #e67e22; }
+    .btn-rdv-orl { background-color: #9b59b6; }
+    .btn-rdv-orl:hover { background-color: #8e44ad; }
+    
+    /* Counters section */
+    .counters { margin-bottom: 15px; background-color: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd; }
+    .counter-items { display: flex; gap: 30px; margin-top: 5px; flex-wrap: wrap; }
+    .counter-item { font-size: 15px; display: flex; align-items: center; }
+    .counter-item-immediat { color: #2c7a7b; }
+    .counter-item-differe { color: #dd6b20; }
+    .counter-item-rdv-orl { color: #805ad5; }
+    .counter-indicator { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+    .counter-indicator-immediat { background-color: #c8e6c9; }
+    .counter-indicator-differe { background-color: #ffe0b2; }
+    .counter-indicator-rdv-orl { background-color: #e8e6ff; }
+    .counter-value { font-weight: 700; margin-left: 5px; }
+
+    /* Style pour le compteur de jours */
+    .jours-restants {
+      font-weight: bold;
+      color: #2c3e50;
+      margin-left: 8px;
+    }
+    .jours-restants.urgent {
+      color: #e74c3c;
+    }
+    .jours-restants.warning {
+      color: #f39c12;
+    }
+    .jours-restants.overdue {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    /* Badge pour facturation prévue */
+    .badge-facturation {
+      display: inline-block;
+      background-color: #e74c3c;
+      color: white;
+      font-weight: bold;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 18px;
+      margin-left: 5px;
+      font-size: 12px;
+    }
+    
+    /* Sections styles */
+    .section { margin-top: 30px; border: 1px solid #ddd; background-color: #f8f9fa; padding: 15px; border-radius: 8px; }
+    .section h2 { color: #dd6b20; margin-top: 0; }
+    
+    /* Tabs styles */
+    .tabs { display: flex; margin-bottom: 15px; border-bottom: 1px solid #ddd; }
+    .tab { padding: 10px 20px; cursor: pointer; border: 1px solid transparent; border-bottom: none; border-radius: 4px 4px 0 0; background-color: #f2f2f2; margin-right: 5px; }
+    .tab:hover { background-color: #e9e9e9; }
+    .tab.active { background-color: #fff; border-color: #ddd; border-bottom-color: #fff; font-weight: bold; color: #3498db; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Modal styles */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; }
+    .modal-content { position: relative; background-color: #fff; margin: 10% auto; padding: 20px; width: 50%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    .close { position: absolute; top: 10px; right: 20px; font-size: 24px; font-weight: bold; cursor: pointer; }
+    .buttons-container { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+    .date-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; }
+    textarea { width: 100%; height: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    
+    /* Modal form groups */
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    
+    /* Diode styles */
+    .diode { display: inline-block; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; margin-right: 10px; background-color: #ccc; transition: background-color 0.3s; }
+    .diode.active { background-color: #2ecc71; }
+    .diode.rouge { background-color: #e74c3c; }
+    .diode.orange { background-color: #f39c12; }
+    
+    /* Two-column layout for options */
+    .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    
+    /* Toggle visibility */
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Gestion des Patients - RDV ORL - Firebase</h1>
+  
+  <!-- Counters -->
+  <div class="counters">
+    <div class="counter-items">
+      <div class="counter-item counter-item-immediat">
+        <div class="counter-indicator counter-indicator-immediat"></div>
+        Essais immédiats: <span id="nombre-essais-immediats" class="counter-value">0</span>
+      </div>
+      <div class="counter-item counter-item-differe">
+        <div class="counter-indicator counter-indicator-differe"></div>
+        Essais différés: <span id="nombre-essais-differes" class="counter-value">0</span>
+      </div>
+      <div class="counter-item counter-item-rdv-orl">
+        <div class="counter-indicator counter-indicator-rdv-orl"></div>
+        RDV ORL: <span id="nombre-rdv-orl" class="counter-value">0</span>
+      </div>
+      <div class="counter-item counter-item-facture">
+        <div class="counter-indicator counter-indicator-facture" style="background-color: #8B4513;"></div>
+        Facturés: <span id="nombre-factures" class="counter-value">0</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Patient Form -->
+  <div class="form-patient">
+    <input id="nom" placeholder="Nom" required>
+    <input id="prenom" placeholder="Prénom" required>
+    <div class="radio-group">
+      <input id="primo" type="radio" value="primo" name="type-patient" checked>
+      <label for="primo">Primo</label>
+      <input id="renou" type="radio" value="renou" name="type-patient">
+      <label for="renou">Renou</label>
+      <input id="prospect" type="radio" value="prospect" name="type-patient">
+      <label for="prospect">Prospect</label>
+    </div>
+    <button id="ajouter-patient">Ajouter Patient</button>
+  </div>
+  
+  <!-- Tabs navigation -->
+  <div class="tabs">
+    <div class="tab active" data-tab="patients">Liste des Patients</div>
+    <div class="tab" data-tab="essais-differes">Suivi des Essais Différés</div>
+    <div class="tab" data-tab="rdv-orl">Suivi des RDV ORL</div>
+    <div class="tab" data-tab="fin-suivi">Fin de Suivi</div>
+    <div class="tab" data-tab="facturations">Facturations</div>
+  </div>
+  
+  <!-- Patients List Tab -->
+  <div id="patients-tab" class="tab-content active">
+    <table id="table-patients">
+      <thead>
+        <tr>
+          <th>Ordonnance</th>
+          <th>Nom</th>
+          <th>Prénom</th>
+          <th>Type</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="liste-patients"></tbody>
+    </table>
+  </div>
+  
+  <!-- Essais Différés Tab -->
+  <div id="essais-differes-tab" class="tab-content">
+    <h2>Suivi des essais différés</h2>
+    <table id="table-essais-differes">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Date RDV</th>
+          <th>Note</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="liste-essais-differes"></tbody>
+    </table>
+  </div>
+  
+  <!-- RDV ORL Tab -->
+  <div id="rdv-orl-tab" class="tab-content">
+    <h2>Suivi des RDV ORL</h2>
+    <table id="table-rdv-orl">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Type de RDV</th>
+          <th>Date RDV</th>
+          <th>Statut</th>
+          <th>Ordonnance</th>
+        </tr>
+      </thead>
+      <tbody id="liste-rdv-orl"></tbody>
+    </table>
+  </div>
+  
+  <!-- Fin de Suivi Tab -->
+  <div id="fin-suivi-tab" class="tab-content">
+    <h2>Suivi des fins d'essai</h2>
+    <div class="counter-items">
+      <div class="counter-item">
+        Nombre de patients en fin de suivi: <span id="nombre-fins" class="counter-value">0</span>
+      </div>
+    </div>
+    <table id="table-fin-suivi">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Date fin d'essai</th>
+          <th>Relance prévue</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody id="liste-fins"></tbody>
+    </table>
+  </div>
+  
+  <!-- Facturations Tab -->
+  <div id="facturations-tab" class="tab-content">
+    <h2>Suivi des facturations</h2>
+    <div class="counter-items">
+      <div class="counter-item counter-item-facture">
+        <div class="counter-indicator" style="background-color: #8B4513;"></div>
+        Nombre de patients facturés: <span id="nombre-facturations" class="counter-value">0</span>
+      </div>
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" id="masquer-factures-global"> Masquer les patients facturés dans la liste principale
+      </label>
+    </div>
+    <table id="table-facturations">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Date de facturation</th>
+          <th>Type</th>
+          <th>Commentaire</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="liste-facturations"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Essai Immédiat -->
+<div class="modal" id="modal-essai-immediat">
+  <div class="modal-content">
+    <span class="close" id="close-essai-immediat">×</span>
+    <h2>Essai immédiat pour: <span id="nom-patient-essai"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Date de début d'essai:</h3>
+      <input type="date" id="date-debut-essai" class="date-input" required>
+    </div>
+    <div style="margin-top: 15px;">
+      <h3>Durée de l'essai (jours):</h3>
+      <input type="number" id="duree-essai" min="1" max="90" value="30" class="date-input">
+    </div>
+    <div style="margin-top: 15px;">
+      <h3>Note d'essai (facultative):</h3>
+      <textarea id="note-essai" placeholder="Vous pouvez ajouter une note pour cet essai..."></textarea>
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-essai">Confirmer</button>
+      <button id="annuler-essai">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Essai Différé -->
+<div class="modal" id="modal-essai-differe">
+  <div class="modal-content">
+    <span class="close" id="close-essai-differe">×</span>
+    <h2>Essai différé pour: <span id="nom-patient-differe"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Date du prochain rendez-vous (obligatoire):</h3>
+      <input type="date" id="date-rdv-differe" class="date-input" required>
+    </div>
+    <div style="margin-top: 15px;">
+      <h3>Note (facultative):</h3>
+      <textarea id="note-differe" placeholder="Vous pouvez ajouter une note pour cet essai différé..."></textarea>
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-differe">Confirmer</button>
+      <button id="annuler-differe">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for RDV ORL -->
+<div id="rdv-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="close-rdv-modal">×</span>
+    <h2>RDV ORL pour <span id="patient-name"></span></h2>
+    
+    <div class="form-group">
+      <label>RDV ORL pris par:</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="rdv-type" value="patient" id="rdv-patient"> Patient
+        </label>
+        <label>
+          <input type="radio" name="rdv-type" value="centre" id="rdv-centre"> Centre
+        </label>
+      </div>
+    </div>
+    
+    <!-- Options for Patient RDV -->
+    <div id="patient-options" class="hidden">
+      <div class="form-group">
+        <label>Date du RDV:</label>
+        <div class="options-grid">
+          <button id="btn-date-known" class="btn">Date connue</button>
+          <button id="btn-date-unknown" class="btn btn-warning">Date inconnue</button>
+        </div>
+      </div>
+      
+      <div id="date-input-container" class="form-group hidden">
+        <input type="date" id="rdv-date" min="">
+        <button id="btn-confirm-patient-date" class="btn btn-success">Confirmer</button>
+      </div>
+    </div>
+    
+    <!-- Options for Centre RDV -->
+    <div id="centre-options" class="hidden">
+      <div class="form-group">
+        <label>Avez-vous la date du RDV ?</label>
+        <div class="options-grid">
+          <button id="btn-centre-date-yes" class="btn">Oui</button>
+          <button id="btn-centre-date-no" class="btn btn-warning">Non</button>
+        </div>
+      </div>
+      
+      <div id="centre-date-container" class="hidden">
+        <div class="form-group">
+          <input type="date" id="centre-rdv-date" min="">
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="patient-notified"> Patient prévenu
+          </label>
+        </div>
+        <button id="btn-confirm-centre-date" class="btn btn-success">Confirmer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Ordonnance Status -->
+<div id="ordonnance-modal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="close-ordonnance-modal">×</span>
+    <h2>Statut ordonnance pour <span id="ordonnance-patient-name"></span></h2>
+    
+    <div class="buttons-container">
+      <button id="btn-ordonnance-obtained" class="btn btn-success">Ordonnance obtenue</button>
+      <button id="btn-ordonnance-pending" class="btn btn-danger">En attente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Fin de Suivi -->
+<div class="modal" id="modal-fin-suivi">
+  <div class="modal-content">
+    <span class="close" id="close-fin-suivi">×</span>
+    <h2>Fin de suivi pour: <span id="nom-patient-fin"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Commentaire de fin (facultatif):</h3>
+      <textarea id="commentaire-fin" placeholder="Vous pouvez ajouter un commentaire pour la fin de ce suivi..."></textarea>
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-fin">Confirmer</button>
+      <button id="annuler-fin">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Viewing Note -->
+<div class="modal" id="modal-voir-note">
+  <div class="modal-content">
+    <span class="close" id="fermer-note">×</span>
+    <h2>Note pour: <span id="nom-patient-note"></span></h2>
+    <div style="margin-top: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; border: 1px solid #ddd;">
+      <p id="contenu-note"></p>
+    </div>
+    <div class="buttons-container">
+      <button id="modifier-note-liste">Modifier</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Relance Modification -->
+<div class="modal" id="modal-relance">
+  <div class="modal-content">
+    <span class="close" id="close-relance">×</span>
+    <h2>Modifier relance pour: <span id="nom-patient-relance"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Nombre de mois avant relance:</h3>
+      <input type="number" id="mois-relance" min="1" max="24" class="date-input">
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-relance">Confirmer</button>
+      <button id="annuler-relance">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Facturation -->
+<div class="modal" id="modal-facture">
+  <div class="modal-content">
+    <span class="close" id="close-facture">×</span>
+    <h2>Facturation pour: <span id="nom-patient-facture"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Date de facturation:</h3>
+      <input type="date" id="date-facturation" class="date-input" required>
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-facture">Confirmer</button>
+      <button id="annuler-facture">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="menu-contextuel" style="display: none; position: fixed; z-index: 1002; background-color: white; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.2); border-radius: 4px; padding: 8px;">
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <button id="option-fin-suivi" style="text-align: left; padding: 5px 10px;">Fin de Suivi</button>
+    <button id="option-facture" style="text-align: left; padding: 5px 10px;">Facturation</button>
+    <button id="option-facture-prevue" style="text-align: left; padding: 5px 10px;">Facturation prévue</button>
+  </div>
+</div>
+
+<!-- Notification div -->
+<div id="notification"></div>
+
+<!-- Modal pour Facturation Prévue -->
+<div class="modal" id="modal-facture-prevue">
+  <div class="modal-content">
+    <span class="close" id="close-facture-prevue">×</span>
+    <h2>Facturation prévue pour: <span id="nom-patient-facture-prevue"></span></h2>
+    <div style="margin-top: 15px;">
+      <h3>Date de facturation prévue:</h3>
+      <input type="date" id="date-facturation-prevue" class="date-input" required>
+    </div>
+    <div style="margin-top: 15px;">
+      <h3>Note (facultative):</h3>
+      <textarea id="note-facturation-prevue" placeholder="Vous pouvez ajouter une note concernant cette facturation prévue..."></textarea>
+    </div>
+    <div class="buttons-container">
+      <button id="confirmer-facture-prevue">Confirmer</button>
+      <button id="annuler-facture-prevue">Annuler</button>
+      <button id="supprimer-facture-prevue" class="hidden" style="background-color: #e74c3c;">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  // Import Firebase modules
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+  
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqLgCObybog6fGl9FWe2i9uGu10C-pfIg",
+    authDomain: "ouioui-9cc8f.firebaseapp.com",
+    projectId: "ouioui-9cc8f",
+    storageBucket: "ouioui-9cc8f.appspot.com",
+    messagingSenderId: "661460129930",
+    appId: "1:661460129930:web:b46c5c2529c5585f557573"
+  };
+  
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  
+  // Global variables
+  let patients = [];
+  let selectedPatientId = null;
+  
+  // DOM elements - Main
+  const nomInput = document.getElementById('nom');
+  const prenomInput = document.getElementById('prenom');
+  const primoRadio = document.getElementById('primo');
+  const renouRadio = document.getElementById('renou');
+  const prospectRadio = document.getElementById('prospect');
+  const ajouterPatientBtn = document.getElementById('ajouter-patient');
+  const listePatients = document.getElementById('liste-patients');
+  const listeEssaisDifferes = document.getElementById('liste-essais-differes');
+  const listeRdvOrl = document.getElementById('liste-rdv-orl');
+  const listeFins = document.getElementById('liste-fins');
+  const nombreEssaisImmediats = document.getElementById('nombre-essais-immediats');
+  const nombreEssaisDifferes = document.getElementById('nombre-essais-differes');
+  const nombreRdvOrl = document.getElementById('nombre-rdv-orl');
+  const nombreFins = document.getElementById('nombre-fins');
+  
+  // Tabs elements
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  // Modal elements - Essai Immédiat
+  const modalEssaiImmediat = document.getElementById('modal-essai-immediat');
+  const nomPatientEssai = document.getElementById('nom-patient-essai');
+  const dateDebutEssai = document.getElementById('date-debut-essai');
+  const dureeEssai = document.getElementById('duree-essai');
+  const noteEssai = document.getElementById('note-essai');
+  const confirmerEssaiBtn = document.getElementById('confirmer-essai');
+  const annulerEssaiBtn = document.getElementById('annuler-essai');
+  const closeEssaiImmediatBtn = document.getElementById('close-essai-immediat');
+  
+  // Modal elements - Essai Différé
+  const modalEssaiDiffere = document.getElementById('modal-essai-differe');
+  const nomPatientDiffere = document.getElementById('nom-patient-differe');
+  const dateRdvDiffere = document.getElementById('date-rdv-differe');
+  const noteDiffere = document.getElementById('note-differe');
+  const confirmerDiffereBtn = document.getElementById('confirmer-differe');
+  const annulerDiffereBtn = document.getElementById('annuler-differe');
+  const closeEssaiDiffereBtn = document.getElementById('close-essai-differe');
+  
+  // Modal elements - RDV ORL
+  const rdvModal = document.getElementById('rdv-modal');
+  const patientName = document.getElementById('patient-name');
+  const closeRdvModal = document.getElementById('close-rdv-modal');
+  const rdvPatient = document.getElementById('rdv-patient');
+  const rdvCentre = document.getElementById('rdv-centre');
+  const patientOptions = document.getElementById('patient-options');
+  const centreOptions = document.getElementById('centre-options');
+  const btnDateKnown = document.getElementById('btn-date-known');
+  const btnDateUnknown = document.getElementById('btn-date-unknown');
+  const dateInputContainer = document.getElementById('date-input-container');
+  const rdvDate = document.getElementById('rdv-date');
+  const btnConfirmPatientDate = document.getElementById('btn-confirm-patient-date');
+  const btnCentreDateYes = document.getElementById('btn-centre-date-yes');
+  const btnCentreDateNo = document.getElementById('btn-centre-date-no');
+  const centreDateContainer = document.getElementById('centre-date-container');
+  const centreRdvDate = document.getElementById('centre-rdv-date');
+  const patientNotified = document.getElementById('patient-notified');
+  const btnConfirmCentreDate = document.getElementById('btn-confirm-centre-date');
+  
+  // Modal elements - Ordonnance
+  const ordonnanceModal = document.getElementById('ordonnance-modal');
+  const ordonnancePatientName = document.getElementById('ordonnance-patient-name');
+  const closeOrdonnanceModal = document.getElementById('close-ordonnance-modal');
+  const btnOrdonnanceObtained = document.getElementById('btn-ordonnance-obtained');
+  const btnOrdonnancePending = document.getElementById('btn-ordonnance-pending');
+  
+  // Modal elements - Fin de Suivi
+  const modalFinSuivi = document.getElementById('modal-fin-suivi');
+  const nomPatientFin = document.getElementById('nom-patient-fin');
+  const commentaireFin = document.getElementById('commentaire-fin');
+  const confirmerFinBtn = document.getElementById('confirmer-fin');
+  const annulerFinBtn = document.getElementById('annuler-fin');
+  const closeFinSuiviBtn = document.getElementById('close-fin-suivi');
+  
+  // Modal elements - Voir Note
+  const modalVoirNote = document.getElementById('modal-voir-note');
+  const nomPatientNote = document.getElementById('nom-patient-note');
+  const contenuNote = document.getElementById('contenu-note');
+  const modifierNoteBtn = document.getElementById('modifier-note-liste');
+  const fermerNoteBtn = document.getElementById('fermer-note');
+  
+  // Modal elements - Relance
+  const modalRelance = document.getElementById('modal-relance');
+  const nomPatientRelance = document.getElementById('nom-patient-relance');
+  const moisRelance = document.getElementById('mois-relance');
+  const confirmerRelanceBtn = document.getElementById('confirmer-relance');
+  const annulerRelanceBtn = document.getElementById('annuler-relance');
+  const closeRelanceBtn = document.getElementById('close-relance');
+  
+  // Modal elements - Facturation
+  const modalFacture = document.getElementById('modal-facture');
+  const nomPatientFacture = document.getElementById('nom-patient-facture');
+  const dateFacturation = document.getElementById('date-facturation');
+  const confirmerFactureBtn = document.getElementById('confirmer-facture');
+  const annulerFactureBtn = document.getElementById('annuler-facture');
+  const closeFactureBtn = document.getElementById('close-facture');
+  
+  // Modal elements - Facturation Prévue
+  const modalFacturePrevue = document.getElementById('modal-facture-prevue');
+  const nomPatientFacturePrevue = document.getElementById('nom-patient-facture-prevue');
+  const dateFacturationPrevue = document.getElementById('date-facturation-prevue');
+  const noteFacturationPrevue = document.getElementById('note-facturation-prevue');
+  const confirmerFacturePrevueBtn = document.getElementById('confirmer-facture-prevue');
+  const annulerFacturePrevueBtn = document.getElementById('annuler-facture-prevue');
+  const supprimerFacturePrevueBtn = document.getElementById('supprimer-facture-prevue');
+  const closeFacturePrevueBtn = document.getElementById('close-facture-prevue');
+  
+  // Initialize the application
+  function initApp() {
+    setupFirebaseListeners();
+    setupEventListeners();
+    setupTabs();
+    
+    // Set minimum dates for date inputs (today)
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0];
+    dateDebutEssai.value = formattedToday;
+    
+    // Set minimum dates for other date inputs (tomorrow)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const formattedTomorrow = tomorrow.toISOString().split('T')[0];
+    dateRdvDiffere.min = formattedTomorrow;
+    rdvDate.min = formattedTomorrow;
+    centreRdvDate.min = formattedTomorrow;
+    
+    // Mettre à jour les compteurs de jours régulièrement
+    updateDaysLeft();
+    // Mise à jour quotidienne
+    setInterval(updateDaysLeft, 86400000); // 24h en millisecondes
+  }
+  
+  // Set up Firebase real-time listeners
+  function setupFirebaseListeners() {
+    onSnapshot(collection(db, "patients"), (snapshot) => {
+      patients = [];
+      snapshot.forEach((doc) => {
+        patients.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+      
+      // Update UI
+      renderPatientsList();
+      renderEssaisDifferesList();
+      renderRdvOrlList();
+      updateFinDeSuiviTable();
+      renderFacturationsList();
+      updateCounters();
+      
+      // Setup listeners for fin de suivi
+      setupFinDeSuiviListeners();
+    });
+  }
+  
+  // Setup tabs
+  function setupTabs() {
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        const tabId = tab.getAttribute('data-tab');
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+      });
+    });
+  }
+  
+  // Update days left for all immediate trial patients
+  function updateDaysLeft() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    patients.forEach(async (patient) => {
+      if (patient.essaiImmediat && patient.dateEssaiImmediat) {
+        const essaiDate = new Date(patient.dateEssaiImmediat.seconds * 1000);
+        const duree = patient.dureeEssai || 30; // Default to 30 days if not specified
+        
+        // Calculate end date
+        const endDate = new Date(essaiDate);
+        endDate.setDate(endDate.getDate() + duree);
+        
+        // Calculate days left - keep real value (negative for overdue)
+        const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        
+        // Update the patient document if days left has changed
+        if (daysLeft !== patient.joursRestants) {
+          const patientRef = doc(db, "patients", patient.id);
+          await updateDoc(patientRef, {
+            joursRestants: daysLeft
+          });
+        }
+      }
+    });
+  }
+  
+  // Update counters
+  function updateCounters() {
+    const essaisImmediats = patients.filter(p => p.essaiImmediat).length;
+    const essaisDifferes = patients.filter(p => p.essaiDiffere).length;
+    const rdvOrl = patients.filter(p => p.rdvOrl).length;
+    const finsSuivi = patients.filter(p => p.statutFin).length;
+    const factures = patients.filter(p => p.facturationDate).length;
+    const facturesPrevues = patients.filter(p => p.facturationPrevueDate && !p.facturationDate).length;
+    
+    nombreEssaisImmediats.textContent = essaisImmediats;
+    nombreEssaisDifferes.textContent = essaisDifferes;
+    nombreRdvOrl.textContent = rdvOrl;
+    nombreFins.textContent = finsSuivi;
+    document.getElementById('nombre-factures').textContent = factures;
+    document.getElementById('nombre-facturations').textContent = factures;
+  }
+  
+  // Facturation (Billing) function
+  function facturerPatient(patientId) {
+    // Récupérer les données du patient depuis Firebase
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        // Stocker l'ID du patient sélectionné dans une variable globale
+        selectedPatientId = patientId;
+        
+        // Préparer la fenêtre modale
+        nomPatientFacture.textContent = `${patient.prenom} ${patient.nom}`;
+        
+        // Initialiser la date de facturation à aujourd'hui
+        dateFacturation.valueAsDate = new Date();
+        
+        // Afficher la fenêtre modale
+        modalFacture.style.display = 'block';
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Confirmer la facturation
+  async function confirmerFacturation() {
+    const dateFacture = dateFacturation.value;
+    
+    // Vérifier que la date est bien saisie
+    if (!dateFacture) {
+      afficherNotification("Veuillez sélectionner une date de facturation", "error");
+      return;
+    }
+    
+    // Récupérer une référence au document du patient
+    const patientRef = doc(db, "patients", selectedPatientId);
+    
+    try {
+      // D'abord obtenir les données actuelles du patient
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Préparer les données à mettre à jour
+      const updateData = {
+        facturationDate: new Date(dateFacture),
+        derniereSuivi: 'facturation',
+        // Supprimer les données de facturation prévue lorsqu'on facture réellement
+        facturationPrevueDate: null,
+        noteFacturationPrevue: null
+      };
+      
+      // Mettre à jour le document dans Firestore
+      await updateDoc(patientRef, updateData);
+      
+      // Ajouter au journal
+      await ajouterAuJournal(`Patient facturé : ${patient.prenom} ${patient.nom} (${new Date(dateFacture).toLocaleDateString()})`);
+      
+      // Fermer la fenêtre modale
+      modalFacture.style.display = 'none';
+      
+      // Afficher une notification de succès
+      afficherNotification("Facturation enregistrée avec succès", "success");
+      
+      // Mettre à jour l'affichage des tableaux
+      renderPatientsList();
+      renderFacturationsList();
+      
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement de la facturation:", error);
+      afficherNotification("Erreur lors de l'enregistrement de la facturation", "error");
+    }
+  }
+  
+  // Mettre à jour le tableau des facturations
+  function updateFacturesTable() {
+    // Récupérer tous les patients facturés
+    const patientsFactures = patients.filter(p => p.facturationDate);
+    
+    // Créer un nouveau conteneur pour afficher les patients facturés
+    const facturesTableContainer = document.createElement('div');
+    facturesTableContainer.classList.add('suivi-table', 'facture');
+    facturesTableContainer.innerHTML = `
+      <h3>Patients facturés <span id="nombre-factures" class="counter-value">${patientsFactures.length}</span></h3>
+      <div>
+        <label>
+          <input type="checkbox" id="masquer-factures"> Masquer les patients facturés dans la liste principale
+        </label>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Date de facturation</th>
+            <th>Type</th>
+            <th>Commentaire</th>
+          </tr>
+        </thead>
+        <tbody id="liste-factures"></tbody>
+      </table>
+    `;
+    
+    // Vérifier si le conteneur existe déjà
+    const existingTable = document.querySelector('.suivi-table.facture');
+    if (existingTable) {
+      existingTable.parentNode.replaceChild(facturesTableContainer, existingTable);
+    } else {
+      // Ajouter à la suite du tableau des fins de suivi
+      const finSuiviTab = document.getElementById('fin-suivi-tab');
+      finSuiviTab.appendChild(facturesTableContainer);
+    }
+    
+    // Remplir le tableau
+    const listeFactures = facturesTableContainer.querySelector('#liste-factures');
+    
+    patientsFactures.forEach(patient => {
+      const tr = document.createElement('tr');
+      tr.dataset.id = patient.id;
+      
+      // Format date if it exists
+      let dateFacturation = '-';
+      if (patient.facturationDate) {
+        const date = new Date(patient.facturationDate.seconds * 1000);
+        dateFacturation = date.toLocaleDateString();
+      }
+      
+      tr.innerHTML = `
+        <td>${patient.prenom} ${patient.nom}</td>
+        <td>${dateFacturation}</td>
+        <td>${patient.type}</td>
+        <td>${patient.commentaireFin || '-'}</td>
+      `;
+      
+      listeFactures.appendChild(tr);
+    });
+    
+    // Ajouter l'écouteur pour la case à cocher
+    const masquerFactures = facturesTableContainer.querySelector('#masquer-factures');
+    
+    masquerFactures.addEventListener('change', function() {
+      toggleHideFactures();
+    });
+    
+    // Restaurer la préférence
+    const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+    if (hideFacturesPreference !== null) {
+      masquerFactures.checked = hideFacturesPreference === 'true';
+    }
+  }
+  
+  // Toggle visibility of factured patients
+  function toggleHideFactures() {
+    const hideFactures = document.getElementById('masquer-factures').checked;
+    
+    // Sauvegarder la préférence
+    localStorage.setItem('hide_factures_preference', hideFactures);
+    
+    // Mettre à jour l'affichage
+    renderPatientsList();
+  }
+  
+    // Setup all event listeners
+  function setupEventListeners() {
+    // Add patient form
+    ajouterPatientBtn.addEventListener('click', addPatient);
+    
+    // Essai immediat modal
+    closeEssaiImmediatBtn.addEventListener('click', closeEssaiImmediatModal);
+    confirmerEssaiBtn.addEventListener('click', confirmerEssaiImmediat);
+    annulerEssaiBtn.addEventListener('click', closeEssaiImmediatModal);
+    
+    // Essai differe modal
+    closeEssaiDiffereBtn.addEventListener('click', closeEssaiDiffereModal);
+    confirmerDiffereBtn.addEventListener('click', confirmerEssaiDiffere);
+    annulerDiffereBtn.addEventListener('click', closeEssaiDiffereModal);
+    
+    // Facturation modal events
+    closeFactureBtn.addEventListener('click', () => {
+      modalFacture.style.display = 'none';
+    });
+    confirmerFactureBtn.addEventListener('click', confirmerFacturation);
+    annulerFactureBtn.addEventListener('click', () => {
+      modalFacture.style.display = 'none';
+    });
+    
+    // Facturation prévue modal events
+    closeFacturePrevueBtn.addEventListener('click', () => {
+      modalFacturePrevue.style.display = 'none';
+    });
+    confirmerFacturePrevueBtn.addEventListener('click', confirmerFacturationPrevue);
+    annulerFacturePrevueBtn.addEventListener('click', () => {
+      modalFacturePrevue.style.display = 'none';
+    });
+    supprimerFacturePrevueBtn.addEventListener('click', supprimerFacturationPrevue);
+    
+    // RDV modal events
+    closeRdvModal.addEventListener('click', closeModal);
+    rdvPatient.addEventListener('change', () => {
+      if (rdvPatient.checked) {
+        patientOptions.classList.remove('hidden');
+        centreOptions.classList.add('hidden');
+      }
+    });
+    
+    rdvCentre.addEventListener('change', () => {
+      if (rdvCentre.checked) {
+        centreOptions.classList.remove('hidden');
+        patientOptions.classList.add('hidden');
+      }
+    });
+    
+    // Patient RDV options
+    btnDateKnown.addEventListener('click', () => {
+      dateInputContainer.classList.remove('hidden');
+    });
+    
+    btnDateUnknown.addEventListener('click', handleDateUnknown);
+    btnConfirmPatientDate.addEventListener('click', handlePatientDateConfirm);
+    
+    // Centre RDV options
+    btnCentreDateYes.addEventListener('click', () => {
+      centreDateContainer.classList.remove('hidden');
+    });
+    
+    btnCentreDateNo.addEventListener('click', handleCentreDateNo);
+    btnConfirmCentreDate.addEventListener('click', handleCentreDateConfirm);
+    
+    // Ordonnance modal events
+    closeOrdonnanceModal.addEventListener('click', () => {
+      ordonnanceModal.style.display = 'none';
+    });
+    
+    btnOrdonnanceObtained.addEventListener('click', () => {
+      updateOrdonnanceStatus(true);
+    });
+    
+    btnOrdonnancePending.addEventListener('click', () => {
+      updateOrdonnanceStatus(false);
+    });
+    
+    // Fin de Suivi modal events
+    closeFinSuiviBtn.addEventListener('click', () => {
+      modalFinSuivi.style.display = 'none';
+    });
+    
+    confirmerFinBtn.addEventListener('click', confirmerFinSuivi);
+    
+    annulerFinBtn.addEventListener('click', () => {
+      modalFinSuivi.style.display = 'none';
+    });
+    
+    // Voir Note modal events
+    fermerNoteBtn.addEventListener('click', () => {
+      modalVoirNote.style.display = 'none';
+    });
+    
+    modifierNoteBtn.addEventListener('click', () => {
+      modifierNoteFin(selectedPatientId);
+    });
+    
+    // Relance modal events
+    closeRelanceBtn.addEventListener('click', () => {
+      modalRelance.style.display = 'none';
+    });
+    
+    confirmerRelanceBtn.addEventListener('click', confirmerModificationRelance);
+    
+    annulerRelanceBtn.addEventListener('click', () => {
+      modalRelance.style.display = 'none';
+    });
+    
+    // Context menu elements
+    const menuContextuel = document.getElementById('menu-contextuel');
+    const optionFinSuivi = document.getElementById('option-fin-suivi');
+    const optionFacture = document.getElementById('option-facture');
+    const optionFacturePrevue = document.getElementById('option-facture-prevue');
+    
+    // Context menu events
+    optionFinSuivi.addEventListener('click', function() {
+      finDeSuivi(selectedPatientId);
+      fermerMenusContextuels();
+    });
+    
+    optionFacture.addEventListener('click', function() {
+      facturerPatient(selectedPatientId);
+      fermerMenusContextuels();
+    });
+    
+    optionFacturePrevue.addEventListener('click', function() {
+      facturationPrevue(selectedPatientId);
+      fermerMenusContextuels();
+    });
+    
+    // Close menus function
+    function fermerMenusContextuels() {
+      menuContextuel.style.display = 'none';
+    }
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', (e) => {
+      if (e.target === modalEssaiImmediat) {
+        closeEssaiImmediatModal();
+      }
+      if (e.target === modalEssaiDiffere) {
+        closeEssaiDiffereModal();
+      }
+      if (e.target === rdvModal) {
+        closeModal();
+      }
+      if (e.target === ordonnanceModal) {
+        ordonnanceModal.style.display = 'none';
+      }
+      if (e.target === modalFinSuivi) {
+        modalFinSuivi.style.display = 'none';
+      }
+      if (e.target === modalVoirNote) {
+        modalVoirNote.style.display = 'none';
+      }
+      if (e.target === modalRelance) {
+        modalRelance.style.display = 'none';
+      }
+      if (e.target === modalFacture) {
+        modalFacture.style.display = 'none';
+      }
+      if (e.target === modalFacturePrevue) {
+        modalFacturePrevue.style.display = 'none';
+      }
+      
+      // Close context menu when clicking elsewhere
+      if (!e.target.closest('#menu-contextuel')) {
+        fermerMenusContextuels();
+      }
+    });
+    
+    // Add context menu options for fin de suivi
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('td') && e.target.closest('td').textContent.includes('mois')) {
+        const row = e.target.closest('tr');
+        if (row) {
+          const patientId = row.getAttribute('data-id');
+          if (patientId) {
+            ouvrirModalRelance(patientId);
+          }
+        }
+      }
+    });
+  }
+  
+  // Diode context menu element
+  const diodeMenu = document.createElement('div');
+  diodeMenu.id = 'menu-diode';
+  diodeMenu.style.position = 'fixed';
+  diodeMenu.style.display = 'none';
+  diodeMenu.style.background = '#fff';
+  diodeMenu.style.border = '1px solid #ddd';
+  diodeMenu.style.borderRadius = '4px';
+  diodeMenu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+  diodeMenu.style.zIndex = '1002';
+  diodeMenu.style.padding = '10px';
+  diodeMenu.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 5px;">
+      <button class="diode-option" data-color="active">Vert</button>
+      <button class="diode-option" data-color="orange">Orange</button>
+      <button class="diode-option" data-color="rouge">Rouge</button>
+      <button class="diode-option" data-color="">Par défaut</button>
+    </div>
+  `;
+  document.body.appendChild(diodeMenu);
+  let patientDiodeSelectionne = null;
+
+  // Render patients list
+  function renderPatientsList() {
+    listePatients.innerHTML = '';
+    
+    // Check if we should hide factured patients
+    const hideFactures = document.getElementById('masquer-factures')?.checked || false;
+    
+    // Filter patients if needed
+    const patientsToShow = hideFactures 
+      ? patients.filter(p => !p.facturationDate)
+      : patients;
+    
+    patientsToShow.forEach(patient => {
+      const row = document.createElement('tr');
+      
+      // Add class for facturation
+      if (patient.facturationDate) {
+        row.classList.add('facture');
+      }
+      // Add classes for styling
+      else if (patient.statutFin) {
+        row.classList.add('urgent'); // Use urgent class (red) for fin de suivi patients
+      }
+      else if (patient.essaiImmediat) {
+        row.classList.add('essai-immediat');
+      } else if (patient.essaiDiffere) {
+        row.classList.add('essai-differe');
+      } else if (patient.rdvOrl) {
+        // Make sure we always use the same class for RDV ORL patients, regardless of type
+        row.classList.add('patient-rdv-patient');
+      }
+      
+      // Format date if it exists
+      let dateDisplay = '-';
+      let joursRestantsDisplay = '';
+      let badgeFacturationPrevue = '';
+      
+      if (patient.dateEssaiImmediat) {
+        const date = new Date(patient.dateEssaiImmediat.seconds * 1000);
+        dateDisplay = date.toLocaleDateString();
+        
+        // Afficher les jours restants pour les essais immédiats
+        if (patient.joursRestants !== undefined) {
+          if (patient.joursRestants < 0) {
+            // Essai dépassé: montrer J+X (valeur positive pour l'affichage)
+            const joursDepasses = Math.abs(patient.joursRestants);
+            joursRestantsDisplay = ` <span class="jours-restants overdue">J+${joursDepasses}</span>`;
+          } else {
+            // Essai en cours: montrer J-X comme avant
+            const joursClass = patient.joursRestants <= 5 ? 'urgent' : patient.joursRestants <= 10 ? 'warning' : '';
+            joursRestantsDisplay = ` <span class="jours-restants ${joursClass}">J-${patient.joursRestants}</span>`;
+          }
+        }
+      } else if (patient.dateRdv) {
+        const date = new Date(patient.dateRdv.seconds * 1000);
+        dateDisplay = date.toLocaleDateString();
+      } else if (patient.rdvOrl && patient.rdvOrl.date) {
+        if (typeof patient.rdvOrl.date === 'object' && patient.rdvOrl.date.seconds) {
+          const date = new Date(patient.rdvOrl.date.seconds * 1000);
+          dateDisplay = date.toLocaleDateString();
+        } else if (patient.rdvOrl.date === 'date rdv orl patient non connu') {
+          dateDisplay = 'Date inconnue';
+        }
+      }
+      
+      // Afficher un badge pour les facturations prévues
+      if (patient.facturationPrevueDate && !patient.facturationDate) {
+        badgeFacturationPrevue = '<span class="badge-facturation" title="Facturation prévue">F</span>';
+      }
+      
+      // Determine diode color based on patient state
+      let diodeClass = "";
+      
+      // If custom diode color is set, use it
+      if (patient.diodeColor) {
+        diodeClass = patient.diodeColor;
+      } else {
+        // Prioritize ordonnance obtenue status for green indicator
+        if (patient.ordonnanceObtenue) {
+          diodeClass = "active"; // Active = Green
+        } else if (patient.essaiImmediat) {
+          diodeClass = "active";
+        } else if (patient.rdvOrl) {
+          diodeClass = "orange";
+        } else if (patient.type === 'renou') {
+          diodeClass = patient.diodeActive ? "active" : "rouge";
+        } else {
+          diodeClass = patient.diodeActive ? "active" : "";
+        }
+      }
+      
+      row.innerHTML = `
+        <td>
+          <div class="diode ${diodeClass}" data-id="${patient.id}"></div>
+        </td>
+        <td>${patient.nom}${badgeFacturationPrevue}</td>
+        <td>${patient.prenom}</td>
+        <td>${patient.type}</td>
+        <td>${dateDisplay}${joursRestantsDisplay}</td>
+        <td class="action-buttons">
+          <button class="btn-essai-immediat" data-id="${patient.id}">Essai Immédiat</button>
+          <button class="btn-essai-differe" data-id="${patient.id}">Essai Différé</button>
+          <button class="btn-rdv-orl" data-id="${patient.id}">RDV ORL</button>
+          <button class="btn-fin-suivi" data-id="${patient.id}">Fin de Suivi</button>
+        </td>
+      `;
+      
+      listePatients.appendChild(row);
+    });
+    
+    // Add event listeners for buttons
+    document.querySelectorAll('.btn-essai-immediat').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        openEssaiImmediatModal(patientId);
+      });
+    });
+    
+    document.querySelectorAll('.btn-essai-differe').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        openEssaiDiffereModal(patientId);
+      });
+    });
+    
+    document.querySelectorAll('.btn-rdv-orl').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        openRdvOrlModal(patientId);
+      });
+    });
+    
+    // Add event listeners for diodes
+    document.querySelectorAll('.diode').forEach(diode => {
+      // Left click for ordonnance modal
+      diode.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        openOrdonnanceModal(patientId);
+      });
+      
+      // Right click for diode color menu
+      diode.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const patientId = e.target.getAttribute('data-id');
+        ouvrirMenuDiode(e, patientId);
+        return false;
+      });
+    });
+    
+    // Add event listener for fin de suivi button
+    document.querySelectorAll('.btn-fin-suivi').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        finDeSuivi(patientId);
+      });
+    });
+    
+      // Add event listeners for diode menu options
+    document.querySelectorAll('.diode-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        const color = e.target.getAttribute('data-color');
+        changerCouleurDiode(color);
+        diodeMenu.style.display = 'none';
+      });
+    });
+    
+    // Hide diode menu when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#menu-diode') && !e.target.closest('.diode')) {
+        diodeMenu.style.display = 'none';
+      }
+    });
+    
+    // Add context menu for patients
+    document.querySelectorAll('#liste-patients tr').forEach(row => {
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        // Get patient ID from a button in the row
+        const btn = row.querySelector('[data-id]');
+        if (btn) {
+          selectedPatientId = btn.getAttribute('data-id');
+          
+          // Position and show context menu
+          const menuContextuel = document.getElementById('menu-contextuel');
+          menuContextuel.style.left = e.clientX + "px";
+          menuContextuel.style.top = e.clientY + "px";
+          menuContextuel.style.display = "block";
+        }
+        
+        return false;
+      });
+    });
+  }
+  
+  // Function to open diode color menu
+  function ouvrirMenuDiode(e, patientId) {
+    patientDiodeSelectionne = patientId;
+    diodeMenu.style.left = e.clientX + "px";
+    diodeMenu.style.top = e.clientY + "px";
+    diodeMenu.style.display = "block";
+  }
+  
+  // Function to change diode color
+  async function changerCouleurDiode(couleur) {
+    if (!patientDiodeSelectionne) return;
+    
+    try {
+      const patientRef = doc(db, "patients", patientDiodeSelectionne);
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      // Prepare update data
+      const updateData = {};
+      
+      if (couleur === '') {
+        // Reset to default color - delete the custom color
+        updateData.diodeColor = null;
+      } else {
+        updateData.diodeColor = couleur;
+      }
+      
+      // If setting to active, also set diodeActive to true
+      if (couleur === 'active') {
+        updateData.diodeActive = true;
+      }
+      
+      // Update Firestore document
+      await updateDoc(patientRef, updateData);
+      
+      // Show notification
+      afficherNotification("Statut visuel mis à jour", "success");
+      
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du statut visuel:", error);
+      afficherNotification("Erreur lors de la mise à jour", "error");
+    }
+  }
+  
+  // Function to toggle diode active state
+  async function toggleDiode(patientId) {
+    if (!patientId) return;
+    
+    try {
+      const patientRef = doc(db, "patients", patientId);
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Update diodeActive value
+      await updateDoc(patientRef, {
+        diodeActive: !patient.diodeActive
+      });
+      
+      // Show notification
+      afficherNotification("Statut visuel mis à jour", "success");
+      
+    } catch (error) {
+      console.error("Erreur lors du basculement du statut visuel:", error);
+      afficherNotification("Erreur lors de la mise à jour", "error");
+    }
+  }
+  
+  // Render essais differes list
+  function renderEssaisDifferesList() {
+    listeEssaisDifferes.innerHTML = '';
+    
+    const patientsDifferes = patients.filter(p => p.essaiDiffere);
+    
+    patientsDifferes.forEach(patient => {
+      const row = document.createElement('tr');
+      
+      // Format date if it exists
+      let dateRdv = '-';
+      if (patient.dateRdv) {
+        const date = new Date(patient.dateRdv.seconds * 1000);
+        dateRdv = date.toLocaleDateString();
+      }
+      
+      row.innerHTML = `
+        <td>${patient.nom} ${patient.prenom}</td>
+        <td>${dateRdv}</td>
+        <td>${patient.noteDiffere || '-'}</td>
+        <td>En attente</td>
+      `;
+      
+      listeEssaisDifferes.appendChild(row);
+    });
+  }
+  
+  // Render RDV ORL list
+  function renderRdvOrlList() {
+    listeRdvOrl.innerHTML = '';
+    
+    const patientsWithRdv = patients.filter(p => p.rdvOrl);
+    
+    patientsWithRdv.forEach(patient => {
+      const row = document.createElement('tr');
+      
+      // Add urgent class for patients that need to be contacted
+      if (patient.rdvOrl.status === "Patient à joindre pour donner date rdv ORL") {
+        row.classList.add('urgent');
+      }
+      
+      // Format date display
+      let dateDisplay = '-';
+      if (patient.rdvOrl.date) {
+        if (patient.rdvOrl.date === 'date rdv orl patient non connu') {
+          dateDisplay = 'Date inconnue';
+        } else if (typeof patient.rdvOrl.date === 'object' && patient.rdvOrl.date.seconds) {
+          const date = new Date(patient.rdvOrl.date.seconds * 1000);
+          dateDisplay = date.toLocaleDateString();
+        } else {
+          dateDisplay = patient.rdvOrl.date;
+        }
+      } else if (patient.rdvOrl.date === null) {
+        dateDisplay = 'À programmer';
+      }
+      
+      // Ordonnance status display
+      const ordonnanceStatus = patient.ordonnanceObtenue ? 
+        '<span style="color: #2ecc71;">✓ Obtenue</span>' : 
+        '<span style="color: #e74c3c;">En attente</span>';
+      
+      row.innerHTML = `
+        <td>${patient.nom} ${patient.prenom}</td>
+        <td>${patient.rdvOrl.type}</td>
+        <td>${dateDisplay}</td>
+        <td>${patient.rdvOrl.status}</td>
+        <td>${ordonnanceStatus}</td>
+      `;
+      
+      listeRdvOrl.appendChild(row);
+    });
+  }
+  
+  // Render facturations list
+  function renderFacturationsList() {
+    const listeFacturations = document.getElementById('liste-facturations');
+    listeFacturations.innerHTML = '';
+    
+    const patientsFactures = patients.filter(p => p.facturationDate);
+    
+    patientsFactures.forEach(patient => {
+      const row = document.createElement('tr');
+      
+      // Format date if it exists
+      let dateFacturation = '-';
+      if (patient.facturationDate) {
+        const date = new Date(patient.facturationDate.seconds * 1000);
+        dateFacturation = date.toLocaleDateString();
+      }
+      
+      row.innerHTML = `
+        <td>${patient.prenom} ${patient.nom}</td>
+        <td>${dateFacturation}</td>
+        <td>${patient.type}</td>
+        <td>${patient.commentaireFin || '-'}</td>
+        <td>
+          <button class="btn-modifier-facture" data-id="${patient.id}">Modifier</button>
+          <button class="btn-supprimer-facture" data-id="${patient.id}">Supprimer</button>
+        </td>
+      `;
+      
+      listeFacturations.appendChild(row);
+    });
+    
+    // Add event listeners for buttons
+    document.querySelectorAll('.btn-modifier-facture').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        facturerPatient(patientId);
+      });
+    });
+    
+    document.querySelectorAll('.btn-supprimer-facture').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const patientId = e.target.getAttribute('data-id');
+        supprimerFacturation(patientId);
+      });
+    });
+    
+    // Add event listener for global checkbox
+    const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+    masquerFacturesGlobal.addEventListener('change', function() {
+      localStorage.setItem('hide_factures_preference', this.checked);
+      
+      // Synchronize with the other checkbox if it exists
+      const otherCheckbox = document.querySelector('.suivi-table.facture #masquer-factures');
+      if (otherCheckbox) {
+        otherCheckbox.checked = this.checked;
+      }
+      
+      toggleHideFactures();
+    });
+    
+    // Restore preference
+    const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+    if (hideFacturesPreference !== null) {
+      masquerFacturesGlobal.checked = hideFacturesPreference === 'true';
+    }
+  }
+  
+  // Function to remove facturation
+  async function supprimerFacturation(patientId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette facturation ?')) {
+      return;
+    }
+    
+    try {
+      const patientRef = doc(db, "patients", patientId);
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Update patient to remove facturation
+      await updateDoc(patientRef, {
+        facturationDate: null,
+        derniereSuivi: patient.statutFin ? 'fin-suivi' : null
+      });
+      
+      // Add to journal
+      await ajouterAuJournal(`Facturation supprimée pour ${patient.prenom} ${patient.nom}`);
+      
+      // Show notification
+      afficherNotification("Facturation supprimée avec succès", "success");
+      
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la facturation:", error);
+      afficherNotification("Erreur lors de la suppression de la facturation", "error");
+    }
+  }
+  
+  // Add a new patient
+  async function addPatient() {
+    const nom = nomInput.value.trim();
+    const prenom = prenomInput.value.trim();
+    let type = "primo";
+    
+    if (renouRadio.checked) {
+      type = "renou";
+    } else if (prospectRadio.checked) {
+      type = "prospect";
+    }
+    
+    if (!nom || !prenom) {
+      afficherNotification("Veuillez remplir tous les champs", "error");
+      return;
+    }
+    
+    const newPatient = {
+      nom,
+      prenom,
+      type,
+      dateCreation: serverTimestamp(),
+      statutFin: false,
+      facturationDate: null,
+      dateEssai: null,
+      joursRestants: null,
+      rdvOrl: null,
+      ordonnanceObtenue: false,
+      essaiImmediat: false,
+      essaiDiffere: false,
+      derniereSuivi: null
+    };
+    
+    try {
+      const docRef = await addDoc(collection(db, "patients"), newPatient);
+      
+      // Reset form
+      nomInput.value = '';
+      prenomInput.value = '';
+      primoRadio.checked = true;
+      
+      afficherNotification(`Patient ${nom} ${prenom} ajouté avec succès`, "success");
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du patient:", error);
+      afficherNotification("Erreur lors de l'ajout du patient", "error");
+    }
+  }
+  
+  // Open essai immediat modal
+  function openEssaiImmediatModal(patientId) {
+    selectedPatientId = patientId;
+    const patient = patients.find(p => p.id === patientId);
+    
+    if (patient) {
+      nomPatientEssai.textContent = `${patient.nom} ${patient.prenom}`;
+      
+      // Définir la date par défaut à aujourd'hui si c'est un nouvel essai
+      if (!patient.dateEssaiImmediat) {
+        dateDebutEssai.valueAsDate = new Date();
+      } else {
+        // Sinon, utiliser la date existante
+        const dateExistante = new Date(patient.dateEssaiImmediat.seconds * 1000);
+        dateDebutEssai.valueAsDate = dateExistante;
+      }
+      
+      // Définir la durée par défaut
+      dureeEssai.value = patient.dureeEssai || 30;
+      
+      // Récupérer la note existante
+      noteEssai.value = patient.noteEssaiImmediat || '';
+      
+      modalEssaiImmediat.style.display = 'block';
+    }
+  }
+  
+  // Close essai immediat modal
+  function closeEssaiImmediatModal() {
+    modalEssaiImmediat.style.display = 'none';
+    selectedPatientId = null;
+  }
+  
+  // Open essai differe modal
+  function openEssaiDiffereModal(patientId) {
+    selectedPatientId = patientId;
+    const patient = patients.find(p => p.id === patientId);
+    
+    if (patient) {
+      nomPatientDiffere.textContent = `${patient.nom} ${patient.prenom}`;
+      dateRdvDiffere.value = '';
+      noteDiffere.value = '';
+      modalEssaiDiffere.style.display = 'block';
+    }
+  }
+  
+  // Close essai differe modal
+  function closeEssaiDiffereModal() {
+    modalEssaiDiffere.style.display = 'none';
+    selectedPatientId = null;
+  }
+  
+  // Open RDV ORL modal
+  function openRdvOrlModal(patientId) {
+    selectedPatientId = patientId;
+    const patient = patients.find(p => p.id === patientId);
+    
+    if (patient) {
+      // Reset modal state
+      patientName.textContent = `${patient.nom} ${patient.prenom}`;
+      rdvPatient.checked = false;
+      rdvCentre.checked = false;
+      patientOptions.classList.add('hidden');
+      centreOptions.classList.add('hidden');
+      dateInputContainer.classList.add('hidden');
+      centreDateContainer.classList.add('hidden');
+      rdvDate.value = '';
+      centreRdvDate.value = '';
+      patientNotified.checked = false;
+      
+      // Show modal
+      rdvModal.style.display = 'block';
+    }
+  }
+  
+  // Close RDV modal
+  function closeModal() {
+    rdvModal.style.display = 'none';
+    selectedPatientId = null;
+  }
+  
+  // Open ordonnance modal
+  function openOrdonnanceModal(patientId) {
+    selectedPatientId = patientId;
+    const patient = patients.find(p => p.id === patientId);
+    
+    if (patient) {
+      ordonnancePatientName.textContent = `${patient.nom} ${patient.prenom}`;
+      ordonnanceModal.style.display = 'block';
+    }
+  }
+  
+  // Confirm essai immediat
+  async function confirmerEssaiImmediat() {
+    if (!selectedPatientId) return;
+    
+    const date = dateDebutEssai.value;
+    const duree = parseInt(dureeEssai.value);
+    const note = noteEssai.value.trim();
+    
+    // Validation
+    if (!date) {
+      afficherNotification("La date de début d'essai est obligatoire", "error");
+      return;
+    }
+    
+    if (isNaN(duree) || duree < 1) {
+      afficherNotification("La durée d'essai doit être supérieure à 0", "error");
+      return;
+    }
+    
+    try {
+      const patientRef = doc(db, "patients", selectedPatientId);
+      
+      // Calculate end date and days left
+      const startDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + duree);
+      
+      const joursRestants = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+      
+      await updateDoc(patientRef, {
+        essaiImmediat: true,
+        essaiDiffere: false,
+        dateEssaiImmediat: new Date(date),
+        dureeEssai: duree,
+        joursRestants: joursRestants,
+        noteEssaiImmediat: note,
+        derniereSuivi: 'essai-immediat',
+        // Reset other statuses
+        statutFin: false,
+        facturationDate: null,
+        rdvOrl: null,
+        ordonnanceObtenue: false
+      });
+      
+      // Close modal
+      closeEssaiImmediatModal();
+      
+      ajouterAuJournal(`Essai immédiat démarré pour patient ID: ${selectedPatientId}, durée: ${duree} jours`);
+      afficherNotification("Essai immédiat démarré avec succès", "success");
+    } catch (error) {
+      console.error("Erreur lors du démarrage de l'essai immédiat:", error);
+      afficherNotification("Erreur lors du démarrage de l'essai immédiat", "error");
+    }
+  }
+  
+  // Confirm essai differe
+  async function confirmerEssaiDiffere() {
+    if (!selectedPatientId) return;
+    
+    const dateRdv = dateRdvDiffere.value;
+    const note = noteDiffere.value.trim();
+    
+    if (!dateRdv) {
+      afficherNotification("La date de rendez-vous est obligatoire", "error");
+      return;
+    }
+    
+    try {
+      const patientRef = doc(db, "patients", selectedPatientId);
+      
+      // Convert date string to timestamp
+      const selectedDate = new Date(dateRdv);
+      
+      await updateDoc(patientRef, {
+        essaiDiffere: true,
+        essaiImmediat: false,
+        dateRdv: new Date(selectedDate),
+        noteDiffere: note,
+        derniereSuivi: 'essai-differe',
+        // Reset other statuses
+        statutFin: false,
+        facturationDate: null,
+        dateEssaiImmediat: null,
+        joursRestants: null,
+        rdvOrl: null,
+        ordonnanceObtenue: false
+      });
+      
+      // Close modal
+      closeEssaiDiffereModal();
+      
+      ajouterAuJournal(`Essai différé programmé pour patient ID: ${selectedPatientId} à la date du ${new Date(dateRdv).toLocaleDateString()}`);
+      afficherNotification("Essai différé programmé avec succès", "success");
+    } catch (error) {
+      console.error("Erreur lors de la programmation de l'essai différé:", error);
+      afficherNotification("Erreur lors de la programmation de l'essai différé", "error");
+    }
+  }
+  
+  // Handle patient with unknown date
+  async function handleDateUnknown() {
+    if (!selectedPatientId) return;
+    
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      try {
+        const patientRef = doc(db, "patients", selectedPatientId);
+        await updateDoc(patientRef, {
+          rdvOrl: {
+            type: 'Patient',
+            date: 'date rdv orl patient non connu',
+            status: 'Non connu'
+          },
+          essaiImmediat: false,
+          essaiDiffere: false,
+          derniereSuivi: 'rdv-orl'
+        });
+        
+        // Close modal
+        rdvModal.style.display = 'none';
+        
+        ajouterAuJournal(`RDV ORL enregistré pour patient ID: ${selectedPatientId} (date inconnue)`);
+        afficherNotification("RDV ORL enregistré (date inconnue)", "success");
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement du RDV ORL:", error);
+        afficherNotification("Erreur lors de l'enregistrement du RDV ORL", "error");
+      }
+    }
+  }
+  
+  // Handle patient date confirmation
+  async function handlePatientDateConfirm() {
+    if (!selectedPatientId) return;
+    
+    const dateValue = rdvDate.value;
+    if (!dateValue) {
+      afficherNotification("Veuillez sélectionner une date pour le RDV", "error");
+      return;
+    }
+    
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      try {
+        const patientRef = doc(db, "patients", selectedPatientId);
+        await updateDoc(patientRef, {
+          rdvOrl: {
+            type: 'Patient',
+            date: new Date(dateValue),
+            status: 'Confirmé'
+          },
+          essaiImmediat: false,
+          essaiDiffere: false,
+          derniereSuivi: 'rdv-orl'
+        });
+        
+        // Close modal
+        rdvModal.style.display = 'none';
+        
+        ajouterAuJournal(`RDV ORL enregistré pour patient ID: ${selectedPatientId} à la date du ${new Date(dateValue).toLocaleDateString()}`);
+        afficherNotification("RDV ORL enregistré avec succès", "success");
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement du RDV ORL:", error);
+        afficherNotification("Erreur lors de l'enregistrement du RDV ORL", "error");
+      }
+    }
+  }
+  
+  // Handle centre with no date
+  async function handleCentreDateNo() {
+    if (!selectedPatientId) return;
+    
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      try {
+        const patientRef = doc(db, "patients", selectedPatientId);
+        await updateDoc(patientRef, {
+          rdvOrl: {
+            type: 'Centre',
+            date: null,
+            status: 'Date à définir'
+          },
+          essaiImmediat: false,
+          essaiDiffere: false,
+          derniereSuivi: 'rdv-orl'
+        });
+        
+        // Close modal
+        rdvModal.style.display = 'none';
+        
+        ajouterAuJournal(`RDV ORL à programmer enregistré pour patient ID: ${selectedPatientId}`);
+        afficherNotification("RDV ORL à programmer enregistré", "success");
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement du RDV ORL:", error);
+        afficherNotification("Erreur lors de l'enregistrement du RDV ORL", "error");
+      }
+    }
+  }
+  
+  // Handle centre date confirmation
+  async function handleCentreDateConfirm() {
+    if (!selectedPatientId) return;
+    
+    const dateValue = centreRdvDate.value;
+    if (!dateValue) {
+      afficherNotification("Veuillez sélectionner une date pour le RDV", "error");
+      return;
+    }
+    
+    const isPatientNotified = patientNotified.checked;
+    const status = isPatientNotified ? "Patient prévenu" : "Patient à joindre pour donner date rdv ORL";
+    
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      try {
+        const patientRef = doc(db, "patients", selectedPatientId);
+        await updateDoc(patientRef, {
+          rdvOrl: {
+            type: 'Centre',
+            date: new Date(dateValue),
+            status: status
+          },
+          essaiImmediat: false,
+          essaiDiffere: false,
+          derniereSuivi: 'rdv-orl'
+        });
+        
+        // Close modal
+        rdvModal.style.display = 'none';
+        
+        ajouterAuJournal(`RDV ORL enregistré pour patient ID: ${selectedPatientId} à la date du ${new Date(dateValue).toLocaleDateString()} (${isPatientNotified ? "patient prévenu" : "patient à prévenir"})`);
+        afficherNotification(`RDV ORL enregistré (${isPatientNotified ? "patient prévenu" : "patient à prévenir"})`, "success");
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement du RDV ORL:", error);
+        afficherNotification("Erreur lors de l'enregistrement du RDV ORL", "error");
+      }
+    }
+  }
+  
+  // Update ordonnance status
+  async function updateOrdonnanceStatus(obtained) {
+    if (!selectedPatientId) return;
+    
+    const patient = patients.find(p => p.id === selectedPatientId);
+    if (patient) {
+      try {
+        const patientRef = doc(db, "patients", selectedPatientId);
+        await updateDoc(patientRef, {
+          ordonnanceObtenue: obtained
+        });
+        
+        // Close modal
+        ordonnanceModal.style.display = 'none';
+        
+        ajouterAuJournal(`Ordonnance marquée comme ${obtained ? "obtenue" : "en attente"} pour patient ID: ${selectedPatientId}`);
+        afficherNotification(`Ordonnance marquée comme ${obtained ? "obtenue" : "en attente"}`, "success");
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour du statut de l'ordonnance:", error);
+        afficherNotification("Erreur lors de la mise à jour du statut de l'ordonnance", "error");
+      }
+    }
+  }
+  
+  // Enregistrement dans le journal
+  async function ajouterAuJournal(message) {
+    const date = new Date();
+    
+    // Enregistrer l'entrée du journal dans Firebase
+    try {
+      await addDoc(collection(db, "journal"), {
+        message: message,
+        timestamp: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'ajout au journal:", error);
+    }
+  }
+  
+  // Notification system
+  function afficherNotification(message, type = "info") {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = type;
+    notification.style.display = "block";
+    
+    // Hide notification after 4 seconds
+    setTimeout(() => {
+      notification.style.display = "none";
+    }, 4000);
+  }
+  
+  // Fin de Suivi (End of Follow-up) function
+  function finDeSuivi(patientId) {
+    // Récupérer les données du patient depuis Firebase
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        // Stocker l'ID du patient sélectionné dans une variable globale
+        selectedPatientId = patientId;
+        
+        // Préparer la fenêtre modale
+        nomPatientFin.textContent = `${patient.prenom} ${patient.nom}`;
+        
+        // Afficher le commentaire existant s'il y en a un
+        commentaireFin.value = patient.commentaireFin || '';
+        
+        // Afficher la fenêtre modale
+        modalFinSuivi.style.display = 'block';
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Confirmer la fin de suivi
+  async function confirmerFinSuivi() {
+    const commentaire = commentaireFin.value.trim();
+    
+    // Récupérer une référence au document du patient
+    const patientRef = doc(db, "patients", selectedPatientId);
+    
+    try {
+      // D'abord obtenir les données actuelles du patient
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      const currentDate = new Date();
+      
+      // Préparer les données à mettre à jour
+      const updateData = {
+        statutFin: true,
+        commentaireFin: commentaire,
+        // Utiliser la date de fin existante ou la date actuelle
+        finEssai: currentDate,
+        // Délai par défaut pour la relance (12 mois si non défini)
+        relanceAnnuelle: patient.relanceAnnuelle || 12,
+        derniereSuivi: 'fin-suivi',
+        // Désactiver autres statuts
+        essaiImmediat: false,
+        essaiDiffere: false,
+        rdvOrl: null
+      };
+      
+      // Calculer la date de relance
+      const relanceDate = new Date(currentDate);
+      relanceDate.setMonth(relanceDate.getMonth() + (patient.relanceAnnuelle || 12));
+      updateData.dateRelance = relanceDate;
+      
+      // Mettre à jour directement sans transaction
+      await updateDoc(patientRef, updateData);
+      
+      // Fermer la fenêtre modale
+      modalFinSuivi.style.display = 'none';
+      
+      // Afficher une notification de succès
+      afficherNotification("Fin de suivi enregistrée avec succès", "success");
+      
+      // Ajouter au journal
+      await ajouterAuJournal(`Fin de suivi enregistrée pour ${patient.prenom} ${patient.nom}`);
+      
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement de la fin de suivi:", error);
+      afficherNotification("Erreur lors de l'enregistrement de la fin de suivi", "error");
+    }
+  }
+  
+  // Mettre à jour le tableau des fins de suivi
+  function updateFinDeSuiviTable() {
+    // Récupérer tous les patients en fin de suivi
+    listeFins.innerHTML = '';
+    
+    const patientsFin = patients.filter(p => p.statutFin);
+    
+    patientsFin.forEach((patient) => {
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-id', patient.id);
+      
+      // Calculer si la date de relance approche
+      let relanceClass = '';
+      if (patient.dateRelance) {
+        const now = new Date();
+        const relanceDate = new Date(patient.dateRelance.seconds * 1000);
+        const moisRestants = Math.ceil((relanceDate - now) / (1000 * 60 * 60 * 24 * 30.44));
+        
+        if (moisRestants <= 1) {
+          relanceClass = 'warning';
+          tr.classList.add('warning');
+        }
+      }
+      
+      // Format date if it exists
+      let finEssaiDate = '-';
+      if (patient.finEssai) {
+        const date = new Date(patient.finEssai.seconds * 1000);
+        finEssaiDate = date.toLocaleDateString();
+      }
+      
+      // Format relance date if it exists
+      let relanceDisplay = `${patient.relanceAnnuelle || 12} mois`;
+      if (patient.dateRelance) {
+        const date = new Date(patient.dateRelance.seconds * 1000);
+        relanceDisplay += ` (Relance: ${date.toLocaleDateString()})`;
+      }
+      
+      tr.innerHTML = `
+        <td>${patient.prenom} ${patient.nom}</td>
+        <td>${finEssaiDate}</td>
+        <td>${relanceDisplay}</td>
+        <td>${patient.commentaireFin || '-'}</td>
+      `;
+      
+      // Ajouter un gestionnaire d'événements pour afficher les détails
+      tr.addEventListener('click', () => {
+        voirNoteFin(patient.id);
+      });
+      
+      listeFins.appendChild(tr);
+    });
+    
+    // Mettre à jour le compteur
+    nombreFins.textContent = patientsFin.length;
+  }
+  
+  // Voir ou modifier la note de fin
+  function voirNoteFin(patientId) {
+    // Récupérer les données du patient
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        selectedPatientId = patientId;
+        
+        // Si une note de fin existe, l'afficher
+        if (patient.commentaireFin && patient.commentaireFin.trim() !== '') {
+          nomPatientNote.textContent = `${patient.prenom} ${patient.nom}`;
+          contenuNote.textContent = patient.commentaireFin;
+          modalVoirNote.style.display = 'block';
+        } else {
+          // Si aucune note n'existe, proposer d'en créer une
+          afficherNotification("Aucune note disponible. Vous pouvez en créer une.", "info");
+          
+          nomPatientFin.textContent = `${patient.prenom} ${patient.nom}`;
+          commentaireFin.value = '';
+          modalFinSuivi.style.display = 'block';
+        }
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Modifier la note de fin
+  function modifierNoteFin(patientId) {
+    // Récupérer les données du patient
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        selectedPatientId = patientId;
+        
+        // Préparer et afficher le modal d'édition
+        nomPatientFin.textContent = `${patient.prenom} ${patient.nom}`;
+        commentaireFin.value = patient.commentaireFin || '';
+        modalFinSuivi.style.display = 'block';
+        
+        // Fermer le modal de visualisation s'il est ouvert
+        modalVoirNote.style.display = 'none';
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Ouvrir le modal de relance
+  function ouvrirModalRelance(patientId) {
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        selectedPatientId = patientId;
+        
+        // Préparer et afficher le modal de modification de relance
+        nomPatientRelance.textContent = `${patient.prenom} ${patient.nom}`;
+        moisRelance.value = patient.relanceAnnuelle || 12;
+        modalRelance.style.display = 'block';
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Confirmer la modification de la relance
+  async function confirmerModificationRelance() {
+    const moisRelanceVal = parseInt(moisRelance.value);
+    
+    // Validation de la saisie
+    if (isNaN(moisRelanceVal) || moisRelanceVal < 1 || moisRelanceVal > 24) {
+      afficherNotification("Veuillez entrer un nombre de mois valide (entre 1 et 24)", "error");
+      return;
+    }
+    
+    const patientRef = doc(db, "patients", selectedPatientId);
+    
+    try {
+      // D'abord obtenir les données actuelles du patient
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Calculer la nouvelle date de relance
+      let dateRelance;
+      if (patient.finEssai) {
+        dateRelance = new Date(patient.finEssai.seconds * 1000);
+      } else {
+        dateRelance = new Date();
+      }
+      
+      dateRelance.setMonth(dateRelance.getMonth() + moisRelanceVal);
+      
+      // Mettre à jour directement sans transaction
+      await updateDoc(patientRef, {
+        relanceAnnuelle: moisRelanceVal,
+        dateRelance: dateRelance
+      });
+      
+      // Fermer la fenêtre modale
+      modalRelance.style.display = 'none';
+      
+      // Afficher une notification de succès
+      afficherNotification("Relance modifiée avec succès", "success");
+      
+      // Ajouter au journal
+      await ajouterAuJournal(`Relance modifiée pour ${patient.prenom} ${patient.nom} - ${moisRelanceVal} mois`);
+      
+      // Rafraîchir l'affichage
+      updateFinDeSuiviTable();
+      
+    } catch (error) {
+      console.error("Erreur lors de la modification de la relance:", error);
+      afficherNotification("Erreur lors de la modification de la relance", "error");
+    }
+  }
+  
+  // Setup listeners for fin de suivi
+  function setupFinDeSuiviListeners() {
+    const patientsFin = patients.filter(p => p.statutFin);
+    
+    // Identifier les patients dont la relance est proche
+    const now = new Date();
+    const relanceProche = [];
+    
+    patientsFin.forEach((patient) => {
+      if (patient.dateRelance) {
+        const relanceDate = new Date(patient.dateRelance.seconds * 1000);
+        const moisRestants = Math.ceil((relanceDate - now) / (1000 * 60 * 60 * 24 * 30.44));
+        
+        if (moisRestants <= 1) {
+          relanceProche.push({
+            id: patient.id,
+            nom: patient.nom,
+            prenom: patient.prenom,
+            dateRelance: relanceDate
+          });
+        }
+      }
+    });
+    
+    // Afficher une notification pour les relances proches
+    if (relanceProche.length > 0) {
+      const message = `${relanceProche.length} patient(s) à relancer prochainement`;
+      afficherNotification(message, "info", 10000); // Notification plus longue (10s)
+    }
+  }
+  
+  // Facturation prévue function
+  function facturationPrevue(patientId) {
+    // Récupérer les données du patient depuis Firebase
+    const patientRef = doc(db, "patients", patientId);
+    
+    getDoc(patientRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        const patient = docSnap.data();
+        // Stocker l'ID du patient sélectionné dans une variable globale
+        selectedPatientId = patientId;
+        
+        // Préparer la fenêtre modale
+        nomPatientFacturePrevue.textContent = `${patient.prenom} ${patient.nom}`;
+        
+        // Vérifier si le patient a déjà une facturation prévue
+        if (patient.facturationPrevueDate) {
+          const date = new Date(patient.facturationPrevueDate.seconds * 1000);
+          dateFacturationPrevue.valueAsDate = date;
+          noteFacturationPrevue.value = patient.noteFacturationPrevue || '';
+          supprimerFacturePrevueBtn.classList.remove('hidden');
+        } else {
+          // Initialiser la date de facturation à dans un mois par défaut
+          const defaultDate = new Date();
+          defaultDate.setMonth(defaultDate.getMonth() + 1);
+          dateFacturationPrevue.valueAsDate = defaultDate;
+          noteFacturationPrevue.value = '';
+          supprimerFacturePrevueBtn.classList.add('hidden');
+        }
+        
+        // Afficher la fenêtre modale
+        modalFacturePrevue.style.display = 'block';
+      } else {
+        console.error("Patient non trouvé");
+        afficherNotification("Patient non trouvé", "error");
+      }
+    }).catch((error) => {
+      console.error("Erreur lors de la récupération du patient:", error);
+      afficherNotification("Erreur lors de la récupération du patient", "error");
+    });
+  }
+  
+  // Confirmer la facturation prévue
+  async function confirmerFacturationPrevue() {
+    const dateFacture = dateFacturationPrevue.value;
+    const note = noteFacturationPrevue.value.trim();
+    
+    // Vérifier que la date est bien saisie
+    if (!dateFacture) {
+      afficherNotification("Veuillez sélectionner une date de facturation prévue", "error");
+      return;
+    }
+    
+    // Récupérer une référence au document du patient
+    const patientRef = doc(db, "patients", selectedPatientId);
+    
+    try {
+      // D'abord obtenir les données actuelles du patient
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Préparer les données à mettre à jour
+      const updateData = {
+        facturationPrevueDate: new Date(dateFacture),
+        noteFacturationPrevue: note
+      };
+      
+      // Mettre à jour le document dans Firestore
+      await updateDoc(patientRef, updateData);
+      
+      // Ajouter au journal
+      await ajouterAuJournal(`Facturation prévue pour ${patient.prenom} ${patient.nom} (${new Date(dateFacture).toLocaleDateString()})`);
+      
+      // Fermer la fenêtre modale
+      modalFacturePrevue.style.display = 'none';
+      
+      // Afficher une notification de succès
+      afficherNotification("Facturation prévue enregistrée avec succès", "success");
+      
+      // Mettre à jour l'affichage des tableaux
+      renderPatientsList();
+      
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement de la facturation prévue:", error);
+      afficherNotification("Erreur lors de l'enregistrement de la facturation prévue", "error");
+    }
+  }
+  
+  // Supprimer la facturation prévue
+  async function supprimerFacturationPrevue() {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette facturation prévue ?')) {
+      return;
+    }
+    
+    // Récupérer une référence au document du patient
+    const patientRef = doc(db, "patients", selectedPatientId);
+    
+    try {
+      // D'abord obtenir les données actuelles du patient
+      const docSnap = await getDoc(patientRef);
+      
+      if (!docSnap.exists()) {
+        afficherNotification("Patient non trouvé", "error");
+        return;
+      }
+      
+      const patient = docSnap.data();
+      
+      // Préparer les données à mettre à jour
+      const updateData = {
+        facturationPrevueDate: null,
+        noteFacturationPrevue: null
+      };
+      
+      // Mettre à jour le document dans Firestore
+      await updateDoc(patientRef, updateData);
+      
+      // Ajouter au journal
+      await ajouterAuJournal(`Facturation prévue supprimée pour ${patient.prenom} ${patient.nom}`);
+      
+      // Fermer la fenêtre modale
+      modalFacturePrevue.style.display = 'none';
+      
+      // Afficher une notification de succès
+      afficherNotification("Facturation prévue supprimée avec succès", "success");
+      
+      // Mettre à jour l'affichage des tableaux
+      renderPatientsList();
+      
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la facturation prévue:", error);
+      afficherNotification("Erreur lors de la suppression de la facturation prévue", "error");
+    }
+  }
+  
+  // Initialize the app
+  document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>

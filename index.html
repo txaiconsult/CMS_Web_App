@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail d'Applications - Active Audition Heyrieux</title>
+    
+    <!-- SVG Favicon (existing) -->
+    <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><defs><linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%238E2DE2"/><stop offset="100%" stop-color="%234A00E0"/></linearGradient></defs><rect x="0" y="0" width="32" height="32" fill="white"/><g transform="translate(16, 16)"><polygon points="0,-10 10,0 0,10 -10,0" fill="white" stroke="url(%23purpleGradient)" stroke-width="1.5"/><line x1="-5" y1="-5" x2="5" y2="5" stroke="url(%23purpleGradient)" stroke-width="1"/><line x1="-5" y1="5" x2="5" y2="-5" stroke="url(%23purpleGradient)" stroke-width="1"/><circle cx="-5" cy="-5" r="1.5" fill="%238E2DE2"/><circle cx="5" cy="-5" r="1.5" fill="%238E2DE2"/><circle cx="-5" cy="5" r="1.5" fill="%238E2DE2"/><circle cx="5" cy="5" r="1.5" fill="%238E2DE2"/><circle cx="0" cy="0" r="2" fill="%234A00E0"/></g></svg>'>
+    
+    <!-- Additional favicon formats for better PC compatibility -->
+    <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='purpleGradient' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%238E2DE2'/><stop offset='100%' stop-color='%234A00E0'/></linearGradient></defs><rect x='0' y='0' width='32' height='32' fill='white'/><g transform='translate(16, 16)'><polygon points='0,-10 10,0 0,10 -10,0' fill='white' stroke='url(%23purpleGradient)' stroke-width='1.5'/><line x1='-5' y1='-5' x2='5' y2='5' stroke='url(%23purpleGradient)' stroke-width='1'/><line x1='-5' y1='5' x2='5' y2='-5' stroke='url(%23purpleGradient)' stroke-width='1'/><circle cx='-5' cy='-5' r='1.5' fill='%238E2DE2'/><circle cx='5' cy='-5' r='1.5' fill='%238E2DE2'/><circle cx='-5' cy='5' r='1.5' fill='%238E2DE2'/><circle cx='5' cy='5' r='1.5' fill='%238E2DE2'/><circle cx='0' cy='0' r='2' fill='%234A00E0'/></g></svg>">
+    
+    <!-- Windows tile icons -->
+    <meta name="msapplication-TileColor" content="#8E2DE2">
+    <meta name="application-name" content="Active Audition">
+    <meta name="msapplication-tooltip" content="Portail Active Audition Heyrieux">
+    
+    <!-- Web app manifest for modern browsers -->
+    <link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;Active Audition&quot;,&quot;short_name&quot;:&quot;ActiveAud&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;icons/icon-192.png&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/png&quot;}],&quot;theme_color&quot;:&quot;#8E2DE2&quot;,&quot;background_color&quot;:&quot;#ffffff&quot;,&quot;display&quot;:&quot;standalone&quot;}">
+    
+    <!-- Theme color for browser UI -->
+    <meta name="theme-color" content="#8E2DE2">
+    
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-bg: #f5f5f5;
+            --dark-text: #2c3e50;
+            --light-text: #ecf0f1;
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            --hover-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            --purple-accent: #8E2DE2;
+            --purple-light: rgba(142, 45, 226, 0.05);
+            --purple-dark: rgba(74, 0, 224, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        @keyframes glowPulse {
+            0% {
+                opacity: 0.2;
+                transform: scale(0.98);
+            }
+            50% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0.2;
+                transform: scale(0.98);
+            }
+        }
+        
+        @keyframes floatingParticles {
+            0% {
+                background-position: 0px 0px, 0px 0px;
+                opacity: 0.3;
+            }
+            25% {
+                background-position: 20px 10px, -20px -15px;
+                opacity: 0.4;
+            }
+            50% {
+                background-position: 40px 20px, -10px -25px;
+                opacity: 0.5;
+            }
+            75% {
+                background-position: 10px 30px, -30px -10px;
+                opacity: 0.4;
+            }
+            100% {
+                background-position: 0px 0px, 0px 0px;
+                opacity: 0.3;
+            }
+        }
+        
+        body {
+            color: var(--dark-text);
+            line-height: 1.6;
+            position: relative;
+            background: linear-gradient(125deg, 
+                rgba(142, 45, 226, 0.03) 0%, 
+                rgba(107, 34, 170, 0.05) 25%, 
+                rgba(74, 0, 224, 0.07) 50%, 
+                rgba(107, 34, 170, 0.05) 75%, 
+                rgba(142, 45, 226, 0.03) 100%);
+            background-size: 300% 300%;
+            animation: gradientFlow 20s ease infinite;
+            overflow-x: hidden;
+            padding-top: 0; /* Will be adjusted in main with padding */
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: -2;
+            opacity: 0.4;
+            background-image: 
+                radial-gradient(circle at 50% 50%, var(--purple-accent) 1px, transparent 1px),
+                radial-gradient(circle at 50% 50%, var(--purple-accent) 1px, transparent 1px);
+            background-size: 30px 30px, 90px 90px;
+            animation: floatingParticles 25s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(142, 45, 226, 0.1) 0%, transparent 70%);
+            animation: glowPulse 10s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: white;
+            box-shadow: var(--card-shadow);
+            padding: 25px 0; /* Augmenté de 15px à 25px */
+            margin-bottom: 0;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100; /* Ensures header stays above other content */
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            max-width: 1600px; /* Augmenté de 1400px à 1600px */
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 25%; /* Réduit de 28% à 25% */
+            padding-left: 10px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+        
+        .logo-text h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--secondary-color);
+            line-height: 1.2;
+        }
+        
+        .logo-text p {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background-color: var(--light-bg);
+            border-radius: 20px;
+            width: 25%; /* Réduit de 28% à 25% */
+            justify-content: center;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        
+        .user-info:hover {
+            background-color: #e8e8e8;
+        }
+        
+        .user-info i {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+        
+        .user-info span {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .welcome {
+            text-align: center;
+            margin-bottom: 20px; /* Réduit de 30px à 20px */
+        }
+        
+        .welcome h2 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .welcome p {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+        }
+        
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px; /* Réduit de 30px à 20px */
+        }
+        
+        .app-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+        
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+        }
+        
+        .app-card.patients::before {
+            background-color: var(--primary-color);
+        }
+        
+        .app-card.calls::before {
+            background-color: var(--warning-color);
+        }
+        
+        .app-card.stock::before {
+            background-color: var(--success-color);
+        }
+        
+        .app-card.timeline::before {
+            background-color: var(--purple-accent);
+        }
+        
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .app-card.patients .app-icon {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .app-card.calls .app-icon {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .app-card.stock .app-icon {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+        }
+        
+        .app-card.timeline .app-icon {
+            background-color: rgba(142, 45, 226, 0.1);
+            color: var(--purple-accent);
+        }
+        
+        .app-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .app-description {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            flex-grow: 1;
+        }
+        
+        .app-features {
+            margin-bottom: 20px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .feature i {
+            color: var(--primary-color);
+            margin-right: 8px;
+        }
+        
+        .app-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            text-align: center;
+            font-weight: 500;
+            width: 100%;
+        }
+        
+        .app-button:hover {
+            background-color: #34495e;
+        }
+        
+        .app-card.patients .app-button {
+            background-color: var(--primary-color);
+        }
+        
+        .app-card.patients .app-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .app-card.calls .app-button {
+            background-color: var(--warning-color);
+        }
+        
+        .app-card.calls .app-button:hover {
+            background-color: #e67e22;
+        }
+        
+        .app-card.stock .app-button {
+            background-color: var(--success-color);
+        }
+        
+        .app-card.stock .app-button:hover {
+            background-color: #27ae60;
+        }
+        
+        .app-card.timeline .app-button {
+            background-color: var(--purple-accent);
+        }
+        
+        .app-card.timeline .app-button:hover {
+            background-color: #7423c6;
+        }
+        
+        footer {
+            margin-top: 30px; /* Réduit de 50px à 30px */
+            text-align: center;
+            color: #7f8c8d;
+            padding: 15px 0; /* Réduit de 20px à 15px */
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                position: relative;
+            }
+            
+            .logo, .user-info {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .app-card {
+                margin-bottom: 20px;
+            }
+            
+            .dev-logo-container {
+                position: relative;
+                left: auto;
+                transform: none;
+                width: 100%;
+                margin-top: 15px;
+            }
+        }
+        
+        /* Icons styles using material icons */
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Style for the developer logo */
+        .dev-logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 50%; /* Augmenté de 44% à 50% */
+            position: relative;
+            overflow: visible;
+            height: 100%;
+            text-align: center;
+        }
+        .dev-logo-title {
+            display: none; /* Hide the title text */
+        }
+        .dev-logo {
+            height: 150px; /* Augmenté de 130px à 150px */
+            margin-top: -20px;
+            margin-bottom: -20px;
+            position: relative;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        
+        @media (max-width: 950px) {
+            .logo-text h1 {
+                font-size: 1.3rem;
+            }
+            
+            .logo-text p {
+                font-size: 0.75rem;
+            }
+            
+            .dev-logo {
+                height: 120px; /* Augmenté de 100px à 120px */
+                margin-top: -15px;
+                margin-bottom: -15px;
+            }
+            
+            .user-info span {
+                font-size: 0.85rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                padding: 10px;
+            }
+            
+            .logo, .user-info, .dev-logo-container {
+                width: 100%;
+                justify-content: center;
+                padding: 5px 0;
+            }
+            
+            .logo {
+                order: 1;
+            }
+            
+            .dev-logo-container {
+                order: 2;
+            }
+            
+            .user-info {
+                order: 3;
+                margin-right: 0;
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            
+            .dev-logo {
+                height: 110px; /* Augmenté de 90px à 110px */
+                margin-top: -10px;
+                margin-bottom: -10px;
+            }
+        }
+
+        /* Animation des points */
+        @keyframes pulse {
+            0% { r: 5; }
+            50% { r: 7; }
+            100% { r: 5; }
+        }
+        
+        @keyframes bigPulse {
+            0% { r: 7; }
+            50% { r: 9; }
+            100% { r: 7; }
+        }
+        
+        /* Animation de contour du losange */
+        @keyframes strokeDash {
+            0% { stroke-dashoffset: 300; }
+            100% { stroke-dashoffset: 0; }
+        }
+        
+        /* Animation de brillance du losange */
+        @keyframes glowEffect {
+            0% { filter: drop-shadow(0 0 2px rgba(142, 45, 226, 0.2)); }
+            50% { filter: drop-shadow(0 0 8px rgba(142, 45, 226, 0.6)); }
+            100% { filter: drop-shadow(0 0 2px rgba(142, 45, 226, 0.2)); }
+        }
+        
+        /* Animation des lignes */
+        @keyframes drawLine {
+            0% { stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: 0; }
+        }
+        
+        /* Animation des lignes de grille */
+        @keyframes fadeGrid {
+            0% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.2; }
+        }
+        
+        /* Animation du dégradé */
+        @keyframes shiftGradient {
+            0% { stop-color: #8E2DE2; }
+            50% { stop-color: #6A3DE2; }
+            100% { stop-color: #8E2DE2; }
+        }
+        
+        /* Classes pour appliquer les animations */
+        .point {
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .center-point {
+            animation: bigPulse 2s infinite ease-in-out;
+        }
+        
+        .grid {
+            animation: fadeGrid 8s infinite ease-in-out;
+        }
+        
+        .connection-line {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: drawLine 2s infinite alternate ease-in-out;
+        }
+        
+        .diamond-outline {
+            stroke-dasharray: 300;
+            animation: strokeDash 6s infinite linear;
+        }
+        
+        .diamond {
+            animation: glowEffect 4s infinite ease-in-out;
+        }
+        
+        .gradient-shift-start {
+            animation: shiftGradient 5s infinite alternate;
+        }
+        
+        .gradient-shift-end {
+            animation: shiftGradient 5s infinite alternate-reverse;
+        }
+        
+        main.container {
+            padding-top: 200px; /* Increased from 100px to 200px to provide more space below the fixed header */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo" aria-label="Logo Active Audition">
+                <div class="logo-icon">
+                    <i class="material-icons" aria-hidden="true">hearing</i>
+                </div>
+                <div class="logo-text">
+                    <h1>Active Audition</h1>
+                    <p>Gestion et suivi des patients</p>
+                </div>
+            </div>
+            
+            <div class="dev-logo-container" aria-label="Logo txAI Consult">
+                <div class="dev-logo-title">Portail txAI Consult</div>
+                <svg class="dev-logo" xmlns="http://www.w3.org/2000/svg" viewBox="170 95 160 170" aria-hidden="true">
+                  <!-- Définition des dégradés et effets -->
+                  <defs>
+                    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%">
+                      <stop offset="0%" stop-color="#8E2DE2" class="gradient-shift-start">
+                        <animate attributeName="stop-color" values="#8E2DE2;#6A3DE2;#8E2DE2" dur="5s" repeatCount="indefinite" />
+                      </stop>
+                      <stop offset="100%" stop-color="#4A00E0" class="gradient-shift-end">
+                        <animate attributeName="stop-color" values="#4A00E0;#6A3DE2;#4A00E0" dur="5s" repeatCount="indefinite" />
+                      </stop>
+                    </linearGradient>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>
+                    </filter>
+                  </defs>
+                  
+                  <!-- Élément principal - losange avec animation de contour -->
+                  <g transform="translate(250, 150)">
+                    <!-- Face avant - losange fixe -->
+                    <polygon points="0,-40 40,0 0,40 -40,0" 
+                           fill="white" 
+                           stroke="url(#purpleGradient)" 
+                           stroke-width="3">
+                      <animate attributeName="filter" values="drop-shadow(0 0 2px rgba(142, 45, 226, 0.2));drop-shadow(0 0 8px rgba(142, 45, 226, 0.6));drop-shadow(0 0 2px rgba(142, 45, 226, 0.2))" dur="4s" repeatCount="indefinite" />
+                    </polygon>
+                         
+                    <!-- Contour animé -->
+                    <polygon points="0,-40 40,0 0,40 -40,0" 
+                           fill="none" 
+                           stroke="url(#purpleGradient)" 
+                           stroke-width="2"
+                           opacity="0.6"
+                           stroke-dasharray="300"
+                           stroke-dashoffset="300">
+                      <animate attributeName="stroke-dashoffset" from="300" to="0" dur="6s" repeatCount="indefinite" />
+                    </polygon>
+                    
+                    <!-- Connexions IA -->
+                    <line x1="-20" y1="-20" x2="20" y2="20" stroke="url(#purpleGradient)" stroke-width="2" stroke-dasharray="100" stroke-dashoffset="100">
+                      <animate attributeName="stroke-dashoffset" values="100;0;100" dur="4s" repeatCount="indefinite" />
+                    </line>
+                    <line x1="-20" y1="20" x2="20" y2="-20" stroke="url(#purpleGradient)" stroke-width="2" stroke-dasharray="100" stroke-dashoffset="100">
+                      <animate attributeName="stroke-dashoffset" values="100;0;100" dur="4s" repeatCount="indefinite" />
+                    </line>
+                    
+                    <!-- Points d'accent -->
+                    <circle cx="-20" cy="-20" r="5" fill="#8E2DE2">
+                      <animate attributeName="r" values="5;7;5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="20" cy="-20" r="5" fill="#8E2DE2">
+                      <animate attributeName="r" values="5;7;5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="-20" cy="20" r="5" fill="#8E2DE2">
+                      <animate attributeName="r" values="5;7;5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="20" cy="20" r="5" fill="#8E2DE2">
+                      <animate attributeName="r" values="5;7;5" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="0" cy="0" r="7" fill="#4A00E0">
+                      <animate attributeName="r" values="7;9;7" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                  </g>
+                  
+                  <!-- Texte principal -->
+                  <g transform="translate(250, 230)" filter="url(#shadow)">
+                    <text font-family="'Arial', sans-serif" 
+                          font-size="42" 
+                          font-weight="bold" 
+                          text-anchor="middle" 
+                          fill="#333">
+                      tx<tspan fill="url(#purpleGradient)">AI</tspan>
+                    </text>
+                    <text y="28"
+                          font-family="'Arial', sans-serif" 
+                          font-size="18" 
+                          text-anchor="middle" 
+                          letter-spacing="3"
+                          fill="#666">
+                      CONSULT
+                    </text>
+                  </g>
+                </svg>
+            </div>
+            
+            <div class="user-info" aria-label="Information utilisateur">
+                <i class="material-icons" aria-hidden="true">account_circle</i>
+                <span>Bonjour, Utilisateur</span>
+            </div>
+        </div>
+    </header>
+    <main class="container">
+        <div class="welcome">
+            <h2>Bienvenue sur votre portail d'applications Active Audition Heyrieux</h2>
+            <p>Sélectionnez une application pour commencer</p>
+        </div>
+        
+        <div class="apps-grid">
+            <!-- Carte pour la gestion des patients -->
+            <div class="app-card patients">
+                <div class="app-icon">
+                    <i class="material-icons">people</i>
+                </div>
+                <h3 class="app-title">Gestion des Patients</h3>
+                <p class="app-description">Suivi complet des patients et des rendez-vous avec les ORL.</p>
+                <div class="app-features">
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Suivi des essais d'appareils</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Gestion des rendez-vous ORL</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Facturation et comptabilité</span>
+                    </div>
+                </div>
+                <a href="./patients.html" class="app-button">Accéder à l'application</a>
+            </div>
+            
+            <!-- Carte pour le journal des appels -->
+            <div class="app-card calls">
+                <div class="app-icon">
+                    <i class="material-icons">call</i>
+                </div>
+                <h3 class="app-title">Journal des Appels</h3>
+                <p class="app-description">Suivi complet des appels reçus et passés avec rappels automatiques.</p>
+                <div class="app-features">
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Enregistrement des appels entrants</span>
+                    </div>
+                    <div class=" feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Rappels programmés</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Historique complet des communications</span>
+                    </div>
+                </div>
+                <a href="./calls.html" class="app-button">Accéder à l'application</a>
+            </div>
+            
+            <!-- Carte pour la gestion de stock -->
+            <div class="app-card stock">
+                <div class="app-icon">
+                    <i class="material-icons">inventory</i>
+                </div>
+                <h3 class="app-title">Gestion de Stock</h3>
+                <p class="app-description">Gestion complète de l'inventaire et attribution des appareils aux patients.</p>
+                <div class="app-features">
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Suivi des numéros de série</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Attribution des appareils</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Gestion des dépôts et fermetures</span>
+                    </div>
+                </div>
+                <a href="./stock.html" class="app-button">Accéder à l'application</a>
+            </div>
+            
+            <!-- Nouvelle carte pour la frise chronologique -->
+            <div class="app-card timeline">
+                <div class="app-icon">
+                    <i class="material-icons">timeline</i>
+                </div>
+                <h3 class="app-title">Frise Chronologique</h3>
+                <p class="app-description">Visualisation des patients en essai immédiat avec alertes personnalisées.</p>
+                <div class="app-features">
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Suivi des délais d'essai</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Alertes pour patients urgents</span>
+                    </div>
+                    <div class="feature">
+                        <i class="material-icons">check_circle</i>
+                        <span>Statistiques et visualisations</span>
+                    </div>
+                </div>
+                <a href="./agenda.html" class="app-button">Accéder à l'application</a>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 TxAI Consult - Tous droits réservés</p>
+        </div>
+    </footer>
+</body>
+</html>

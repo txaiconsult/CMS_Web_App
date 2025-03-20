@@ -1,0 +1,2410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Stock et Patients - Centre Auditif - Firebase</title>
+    <style>
+        /* Garder les mêmes styles que stockperso1.html */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .module {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8fafc;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 8px 15px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-delete {
+            background-color: #e74c3c;
+            padding: 5px 10px;
+            width: auto;
+        }
+        .item-type-indicator {
+            font-size: 14px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            color: white;
+            margin-left: 8px;
+            font-weight: normal;
+        }
+        
+        /* Styles pour le contexte menu */
+        .context-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .context-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .context-menu li {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        
+        .context-menu li:hover {
+            background-color: #f0f9ff;
+        }
+        
+        /* Styles pour la fenêtre modale */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .tab.active {
+            background-color: #2563eb;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Style pour les produits assignés */
+        .produit-assigne {
+            background-color: #fef3c7;
+        }
+        
+        /* Style pour le timer */
+        .timer {
+            font-size: 12px;
+            color: #ef4444;
+            margin-top: 5px;
+        }
+        
+        /* Style pour les dates de dépôt */
+        .date-depot {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #0284c7;
+        }
+        
+        /* Style pour le modal de calendrier */
+        .date-modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .date-modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Styles pour les commentaires */
+        .message-unread {
+            background-color: #fee2e2;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+        
+        .message-read {
+            background-color: #f3f4f6;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+        
+        .comment-container {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+        
+        .add-comment {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .add-comment input {
+            margin: 0;
+        }
+        
+        .comment-date {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        /* Styles pour le switch de synchronisation automatique */
+        .switch-container {
+            position: relative; 
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        
+        .switch-checkbox {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .switch-slider {
+            background-color: #10b981;
+        }
+        
+        input:checked + .switch-slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Styles pour le sous-tableau des produits assignés */
+        .sub-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+        }
+        
+        .sub-table th, .sub-table td {
+            border: 1px solid #e2e8f0;
+            padding: 6px;
+            text-align: left;
+            font-size: 12px;
+        }
+        
+        .sub-table th {
+            background-color: #f1f5f9;
+            font-weight: normal;
+        }
+        
+        .sub-table-container {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        /* Style pour les produits en essai */
+        .produit-essai {
+            background-color: #dcfce7;
+        }
+
+        /* Styles pour la recherche rapide de patients */
+        .patient-search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .patient-search-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .patient-dropdown {
+            position: absolute;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+        
+        .patient-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        
+        .patient-item:hover {
+            background-color: #f0f9ff;
+        }
+        
+        .patient-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        .patient-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .no-results {
+            padding: 10px;
+            text-align: center;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Onglets de navigation -->
+    <div class="tabs">
+        <div class="tab active" onclick="changerOnglet('tab-stock')">Gestion de Stock</div>
+        <div class="tab" onclick="changerOnglet('tab-patients')">Gestion des Patients</div>
+        <button id="saveButton" onclick="sauvegardeManuelle()" style="margin-left: auto; background-color: #16a34a;">
+            Sauvegarder
+        </button>
+    </div>
+
+    <!-- Contenu de l'onglet Stock -->
+    <div id="tab-stock" class="tab-content active">
+        <div class="module">
+            <h2 style="margin:0 0 20px 0; color:#2d3748;">Ajouter un numéro de série</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span id="compteur" style="font-weight: bold; color: #2563eb;">Nombre d'entrées: 0</span>
+            </div>
+            <input type="text" id="matriculeInput" placeholder="Numéro de série" style="width:100%;">
+            <button onclick="ajouterMatricule()" style="width:100%;">
+                Ajouter
+            </button>
+        </div>
+
+        <div class="module">
+            <h2 style="margin:0 0 20px 0; color:#2d3748;">Liste des produits</h2>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <div id="filtreCategories" style="display: flex; gap: 5px;">
+                    <button onclick="filtrerProduits('tous')" class="filtre-btn active" data-filtre="tous" style="background-color: #3b82f6; width: auto;">
+                        Tous
+                    </button>
+                    <button onclick="filtrerProduits('depot')" class="filtre-btn" data-filtre="depot" style="background-color: #10b981; width: auto;">
+                        Dépôt
+                    </button>
+                    <button onclick="filtrerProduits('ferme')" class="filtre-btn" data-filtre="ferme" style="background-color: #f59e0b; width: auto;">
+                        Fermé
+                    </button>
+                    <button onclick="filtrerProduits('C1')" class="filtre-btn" data-filtre="C1" style="background-color: #8b5cf6; width: auto;">
+                        C1
+                    </button>
+                    <button onclick="filtrerProduits('EG')" class="filtre-btn" data-filtre="EG" style="background-color: #ec4899; width: auto;">
+                        EG
+                    </button>
+                    <button onclick="filtrerProduits('MG')" class="filtre-btn" data-filtre="MG" style="background-color: #14b8a6; width: auto;">
+                        MG
+                    </button>
+                    <button onclick="filtrerProduits('AG')" class="filtre-btn" data-filtre="AG" style="background-color: #f97316; width: auto;">
+                        AG
+                    </button>
+                </div>
+                <button id="toggleAssignesBtn" onclick="toggleProduitsAssignes()" style="background-color: #6366f1; width: auto;">
+                    Masquer produits assignés
+                </button>
+            </div>
+            <table id="stockTable">
+                <thead>
+                    <tr>
+                        <th>Numéro de série</th>
+                        <th>Type</th>
+                        <th>Type d'appareil</th>
+                        <th>Dénomination</th>
+                        <th>Statut</th>
+                        <th>Couleur</th>
+                        <th>Date d'ajout</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody">
+                    <!-- Les données seront ajoutées ici dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Contenu de l'onglet Patients -->
+    <div id="tab-patients" class="tab-content">
+        <div class="module">
+            <div style="margin-top: 0;">
+                <h3 style="margin:0 0 10px 0; color:#2d3748;">Synchronisation des patients</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                    <button onclick="synchroniserPatientsDepuisSuivi()" style="width:70%; background-color: #8b5cf6;">
+                        Synchronisation complète
+                    </button>
+                    <div style="width: 30%;">
+                        <label for="syncAutoToggle" style="display: flex; align-items: center; cursor: pointer;">
+                            <span style="margin-right: 5px; font-size: 14px;">Auto</span>
+                            <div class="switch-container">
+                                <input type="checkbox" id="syncAutoToggle" class="switch-checkbox" onchange="toggleSyncAuto()">
+                                <span class="switch-slider" id="syncAutoSlider"></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div id="syncStatus" style="font-size: 12px; color: #666; margin-top: 5px;">
+                    Dernière synchronisation: Jamais
+                </div>
+            </div>
+        </div>
+
+        <div class="module">
+            <h2 style="margin:0 0 20px 0; color:#2d3748;">Liste des patients</h2>
+            
+            <!-- Ajouter la barre de recherche rapide -->
+            <div class="patient-search-container">
+                <input type="text" id="patientSearchInput" class="patient-search-input" placeholder="Rechercher un patient par nom ou prénom..." autocomplete="off">
+                <div id="patientSearchDropdown" class="patient-dropdown"></div>
+            </div>
+            
+            <button id="togglePatientsNonAssignesBtn" onclick="togglePatientsNonAssignes()" style="background-color: #6366f1; margin-bottom: 10px; width: auto;">
+                Masquer patients non assignés
+            </button>
+            <table id="patientsTable">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Prénom</th>
+                        <th>Date d'ajout</th>
+                        <th>Produits assignés</th>
+                        <th>Commentaires</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="patientsTableBody">
+                    <!-- Les données seront ajoutées ici dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Menu contextuel -->
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li onclick="ouvrirModalAssigner()">Assigner à un patient</li>
+            <li onclick="ouvrirModalChangerNumero()">Changer numéro de série</li>
+        </ul>
+    </div>
+
+    <!-- Menu contextuel pour les patients -->
+    <div id="contextMenuPatient" class="context-menu">
+        <ul>
+            <li onclick="ouvrirModalAssignerNumero()">Assigner un numéro de série</li>
+        </ul>
+    </div>
+
+    <!-- Modal pour assigner un produit à un patient -->
+    <div id="assignerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('assignerModal')">&times;</span>
+            <h3>Assigner le produit à un patient</h3>
+            <div id="produitInfo" style="margin-bottom: 15px; padding: 10px; background-color: #f8fafc; border-radius: 4px;"></div>
+            
+            <div style="margin-bottom: 15px;">
+                <h4>Patient existant</h4>
+                <select id="patientSelect" style="width: 100%;">
+                    <option value="">Sélectionner un patient...</option>
+                </select>
+                <button onclick="assignerProduitPatientExistant()" style="width: 100%; margin-top: 10px;">Assigner</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour sélectionner la date de dépôt -->
+    <div id="dateDepotModal" class="date-modal">
+        <div class="date-modal-content">
+            <span class="close" onclick="fermerModal('dateDepotModal')">&times;</span>
+            <h3>Date de dépôt</h3>
+            <p>Sélectionnez la date de dépôt :</p>
+            <input type="date" id="dateDepotInput" style="width: 100%;">
+            <p style="font-size: 12px; color: #666;">Le statut passera automatiquement à "Fermé" deux mois après cette date.</p>
+            <button onclick="confirmerDateDepot()" style="width: 100%; margin-top: 10px;">Confirmer</button>
+        </div>
+    </div>
+    
+    <!-- Modal pour changer le numéro de série -->
+    <div id="changerNumeroModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('changerNumeroModal')">&times;</span>
+            <h3>Changer le numéro de série</h3>
+            <div id="produitInfoNumero" style="margin-bottom: 15px; padding: 10px; background-color: #f8fafc; border-radius: 4px;"></div>
+            
+            <div>
+                <label for="nouveauNumeroInput">Nouveau numéro de série :</label>
+                <input type="text" id="nouveauNumeroInput" style="width: 100%; margin-bottom: 15px;">
+                <button onclick="changerNumeroSerie()" style="width: 100%;">Confirmer</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour renommer un patient -->
+    <div id="renommerPatientModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('renommerPatientModal')">&times;</span>
+            <h3>Modifier les informations du patient</h3>
+            <div id="patientInfoRenommer" style="margin-bottom: 15px; padding: 10px; background-color: #f8fafc; border-radius: 4px;"></div>
+            
+            <div>
+                <label for="nouveauNomPatientEdit">Nouveau nom :</label>
+                <input type="text" id="nouveauNomPatientEdit" style="width: 100%; margin-bottom: 15px;">
+                
+                <label for="nouveauPrenomPatientEdit">Nouveau prénom :</label>
+                <input type="text" id="nouveauPrenomPatientEdit" style="width: 100%; margin-bottom: 15px;">
+                
+                <button onclick="renommerPatient()" style="width: 100%;">Confirmer</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal pour modifier un commentaire -->
+    <div id="modifierCommentaireModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('modifierCommentaireModal')">&times;</span>
+            <h3>Modifier le commentaire</h3>
+            <div id="commentaireInfo" style="margin-bottom: 15px; padding: 10px; background-color: #f8fafc; border-radius: 4px;"></div>
+            
+            <div>
+                <label for="nouveauTexteCommentaire">Nouveau texte :</label>
+                <input type="text" id="nouveauTexteCommentaire" style="width: 100%; margin-bottom: 15px;">
+                <button onclick="confirmerModificationCommentaire()" style="width: 100%;">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour assigner des numéros de série à un patient -->
+    <div id="assignerNumeroModal" class="modal">
+        <div class="modal-content" style="width: 600px; max-width: 90%;">
+            <span class="close" onclick="fermerModal('assignerNumeroModal')">&times;</span>
+            <h3>Assigner des numéros de série</h3>
+            <div id="patientInfoNumeros" style="margin-bottom: 15px; padding: 10px; background-color: #f8fafc; border-radius: 4px;"></div>
+            
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="sub-table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Sélect.</th>
+                            <th style="width: 30%;">Numéro de série</th>
+                            <th style="width: 30%;">Type</th>
+                            <th style="width: 30%;">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="numerosDisponiblesList">
+                        <!-- La liste sera générée dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <button onclick="confirmerAssignationNumeros()" style="width: 100%; margin-top: 15px;">Assigner les numéros sélectionnés</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+        // Firebase configuration - utiliser la même config que patient-firebase-rdv-orl
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqLgCObybog6fGl9FWe2i9uGu10C-pfIg",
+            authDomain: "ouioui-9cc8f.firebaseapp.com",
+            projectId: "ouioui-9cc8f",
+            storageBucket: "ouioui-9cc8f.appspot.com",
+            messagingSenderId: "661460129930",
+            appId: "1:661460129930:web:b46c5c2529c5585f557573"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Variables globales
+        let stockItems = {};
+        let counter = 0;
+        let patients = [];
+        let patientCounter = 0;
+        let produitSelectionne = null;
+        let produitStatutSelectionne = null;
+        let patientSelectionne = null;
+        let commentaireSelectionne = null;
+        let patientCommentaireSelectionne = null;
+        let masquerAssignes = false;
+        let filtreActif = 'tous';
+        let derniereSauvegarde = Date.now();
+        let sauvegardeReussie = true;
+        let erreurSauvegarde = "";
+        let synchronisationAutomatique = true;
+        let derniereSynchronisation = 0;
+        let masquerPatientsNonAssignes = false;
+        let patientSearchTimeout;
+        let patientHighlightedId = null;
+
+        // Écouter les changements des patients dans Firebase
+        onSnapshot(collection(db, "patients"), (snapshot) => {
+            patients = [];
+            snapshot.forEach((doc) => {
+                patients.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            rafraichirTableauPatients();
+        });
+
+        // Écouter les changements des produits dans Firebase
+        onSnapshot(collection(db, "stockItems"), (snapshot) => {
+            stockItems = {};
+            snapshot.forEach((doc) => {
+                stockItems[doc.id] = doc.data();
+            });
+            mettreAJourCompteur();
+            rafraichirTableau();
+        });
+
+        // Vérifier les statuts des dépôts toutes les minutes
+        setInterval(verifierDatesDepot, 60000);
+
+        // Synchronisation automatique toutes les 2 minutes
+        setInterval(function() {
+            if (synchronisationAutomatique) {
+                const maintenant = Date.now();
+                if (maintenant - derniereSynchronisation >= 120000) {
+                    console.log("Démarrage de la synchronisation automatique...");
+                    synchroniserPatientsDepuisSuivi();
+                    derniereSynchronisation = maintenant;
+                }
+            }
+        }, 120000);
+
+        // Fonction pour afficher une notification
+        function afficherNotification(message, type = "info") {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '4px';
+            notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            notification.style.zIndex = '9999';
+            
+            if (type === "error") {
+                notification.style.backgroundColor = '#ef4444';
+            } else if (type === "warning") {
+                notification.style.backgroundColor = '#f59e0b';
+            } else if (type === "success") {
+                notification.style.backgroundColor = '#10b981';
+            } else {
+                notification.style.backgroundColor = '#3b82f6';
+            }
+            
+            notification.style.color = 'white';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 4000);
+        }
+
+        // Fonction pour changer d'onglet
+        function changerOnglet(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="changerOnglet('${tabId}')"]`).classList.add('active');
+        }
+
+        // Fonction pour mettre à jour le compteur
+        function mettreAJourCompteur() {
+            let nombreEntrees = Object.keys(stockItems).length;
+            document.getElementById('compteur').textContent = `Nombre d'entrées: ${nombreEntrees}`;
+        }
+
+        // Fonction pour ajouter un numéro de série
+        async function ajouterMatricule() {
+            const matricule = document.getElementById('matriculeInput').value.trim();
+            
+            if (!matricule) {
+                return alert('Veuillez entrer un numéro de série');
+            }
+
+            try {
+                // Vérifier si le matricule existe déjà
+                const snapshot = await getDocs(query(collection(db, "stockItems"), where("matricule", "==", matricule)));
+                if (!snapshot.empty) {
+                    return alert('Ce numéro de série existe déjà');
+                }
+
+                // Créer un nouvel item dans Firebase
+                const newItem = {
+                    matricule: matricule,
+                    type: "",
+                    typeAppareil: "",
+                    denomination: "",
+                    statut: "",
+                    couleur: "",
+                    dateAjout: serverTimestamp(),
+                    ordre: counter++,
+                    patientId: null,
+                    statutPatient: "Neutre"
+                };
+
+                await addDoc(collection(db, "stockItems"), newItem);
+                
+                document.getElementById('matriculeInput').value = '';
+                afficherNotification("Produit ajouté avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'ajout:", error);
+                afficherNotification("Erreur lors de l'ajout du produit", "error");
+            }
+        }
+
+        // Fonction pour synchroniser les patients depuis patient-firebase-rdv-orl
+        async function synchroniserPatientsDepuisSuivi() {
+            try {
+                console.log("Synchronisation des patients depuis Firebase...");
+
+                // Récupérer tous les patients de la collection patients
+                const snapshot = await getDocs(collection(db, "patients"));
+                const patientsFirebase = [];
+                snapshot.forEach((doc) => {
+                    patientsFirebase.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                console.log(`${patientsFirebase.length} patients trouvés dans Firebase`);
+
+                // Mettre à jour la liste des patients
+                patients = patientsFirebase;
+
+                // Rafraîchir l'affichage
+                rafraichirTableauPatients();
+                
+                derniereSynchronisation = Date.now();
+                
+                // Mettre à jour le texte du statut
+                const syncStatus = document.getElementById('syncStatus');
+                if (syncStatus) {
+                    syncStatus.textContent = `Dernière synchronisation: ${new Date().toLocaleString()}${synchronisationAutomatique ? " (Auto activé)" : " (Auto désactivé)"}`;
+                }
+
+                afficherNotification("Synchronisation réussie", "success");
+            } catch (error) {
+                console.error("Erreur lors de la synchronisation:", error);
+                afficherNotification("Erreur lors de la synchronisation", "error");
+            }
+        }
+
+        // Fonction pour rafraîchir le tableau des patients
+        function rafraichirTableauPatients() {
+            const tbody = document.getElementById('patientsTableBody');
+            tbody.innerHTML = '';
+            
+            // Mettre à jour la liste déroulante des patients dans le modal
+            const patientSelect = document.getElementById('patientSelect');
+            patientSelect.innerHTML = '<option value="">Sélectionner un patient...</option>';
+            
+            // Convertir en tableau pour trier
+            const patientsArray = patients.map(patient => patient);
+            
+            // Trier par ordre alphabétique du nom
+            patientsArray.sort((a, b) => a.nom.localeCompare(b.nom));
+            
+            patientsArray.forEach(patient => {
+                // Si l'option est activée, n'afficher que les patients ayant au moins un produit assigné
+                if (masquerPatientsNonAssignes && (!patient.produitsAssignes || patient.produitsAssignes.length === 0)) {
+                    return;
+                }
+
+                const row = document.createElement('tr');
+                // Ajouter l'ID du patient comme attribut de données pour pouvoir le retrouver facilement
+                row.setAttribute('data-patient-id', patient.id);
+                
+                // Ajouter l'écouteur d'événement pour le clic droit
+                row.addEventListener('contextmenu', function(e) {
+                    afficherContextMenuPatient(e, patient.id);
+                });
+                
+                // Nom
+                const tdNom = document.createElement('td');
+                tdNom.textContent = patient.nom;
+                row.appendChild(tdNom);
+                
+                // Prénom
+                const tdPrenom = document.createElement('td');
+                tdPrenom.textContent = patient.prenom;
+                row.appendChild(tdPrenom);
+                
+                // Date d'ajout
+                const tdDate = document.createElement('td');
+                if (patient.dateCreation) {
+                    const date = new Date(patient.dateCreation.seconds * 1000);
+                    tdDate.textContent = date.toLocaleDateString();
+                } else {
+                    tdDate.textContent = '-';
+                }
+                row.appendChild(tdDate);
+                
+                // Produits assignés
+                const tdProduits = document.createElement('td');
+                if (patient.produitsAssignes && patient.produitsAssignes.length > 0) {
+                    const subTableContainer = document.createElement('div');
+                    subTableContainer.className = 'sub-table-container';
+                    
+                    const subTable = document.createElement('table');
+                    subTable.className = 'sub-table';
+                    
+                    // En-têtes du sous-tableau
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+                    
+                    const headers = ['Numéro', 'Type', 'Statut', 'Action'];
+                    headers.forEach(headerText => {
+                        const th = document.createElement('th');
+                        th.textContent = headerText;
+                        headerRow.appendChild(th);
+                    });
+                    
+                    thead.appendChild(headerRow);
+                    subTable.appendChild(thead);
+                    
+                    // Corps du sous-tableau
+                    const tbody = document.createElement('tbody');
+                    
+                    patient.produitsAssignes.forEach(produitId => {
+                        const produit = stockItems[produitId];
+                        if (produit) {
+                            const produitRow = document.createElement('tr');
+                            
+                            // Appliquer la classe de style si le produit est en essai
+                            if (produit.statutPatient === "Essai") {
+                                produitRow.classList.add('produit-essai');
+                            }
+                            
+                            // Numéro de série
+                            const tdMatricule = document.createElement('td');
+                            tdMatricule.textContent = produit.matricule;
+                            produitRow.appendChild(tdMatricule);
+                            
+                            // Type
+                            const tdType = document.createElement('td');
+                            tdType.textContent = produit.type || 'Non défini';
+                            if (produit.typeAppareil && produit.type === 'appareil') {
+                                tdType.textContent += ` (${produit.typeAppareil})`;
+                            }
+                            produitRow.appendChild(tdType);
+                            
+                            // Statut du patient
+                            const tdStatut = document.createElement('td');
+                            const selectStatut = document.createElement('select');
+                            selectStatut.innerHTML = `
+                                <option value="Neutre" ${produit.statutPatient === "Neutre" ? "selected" : ""}>Neutre</option>
+                                <option value="Essai" ${produit.statutPatient === "Essai" ? "selected" : ""}>Essai</option>
+                                <option value="SAV" ${produit.statutPatient === "SAV" ? "selected" : ""}>SAV</option>
+                                <option value="Acheté" ${produit.statutPatient === "Acheté" ? "selected" : ""}>Acheté</option>
+                            `;
+                            selectStatut.addEventListener('change', function() {
+                                updateProduitStatut(produitId, this.value);
+                            });
+                            tdStatut.appendChild(selectStatut);
+                            produitRow.appendChild(tdStatut);
+                            
+                            // Actions
+                            const tdActions = document.createElement('td');
+                            const btnSupprimer = document.createElement('button');
+                            btnSupprimer.textContent = 'Retirer';
+                            btnSupprimer.className = 'btn-delete';
+                            btnSupprimer.style.padding = '3px 6px';
+                            btnSupprimer.style.fontSize = '11px';
+                            btnSupprimer.onclick = function() {
+                                retirerProduitDuPatient(produitId, patient.id);
+                            };
+                            tdActions.appendChild(btnSupprimer);
+                            produitRow.appendChild(tdActions);
+                            
+                            tbody.appendChild(produitRow);
+                        }
+                    });
+                    
+                    subTable.appendChild(tbody);
+                    subTableContainer.appendChild(subTable);
+                    tdProduits.appendChild(subTableContainer);
+                } else {
+                    tdProduits.textContent = 'Aucun produit assigné';
+                }
+                row.appendChild(tdProduits);
+                
+                // Commentaires
+                const tdCommentaires = document.createElement('td');
+                
+                // Conteneur pour afficher les commentaires existants
+                const commentContainer = document.createElement('div');
+                commentContainer.className = 'comment-container';
+                
+                if (patient.commentaires && patient.commentaires.length > 0) {
+                    patient.commentaires.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = comment.lu ? 'message-read' : 'message-unread';
+                        
+                        const commentText = document.createElement('div');
+                        commentText.textContent = comment.texte;
+                        
+                        const commentDate = document.createElement('div');
+                        commentDate.className = 'comment-date';
+                        commentDate.textContent = comment.date;
+                        
+                        // Boutons d'actions pour les commentaires
+                        const commentActions = document.createElement('div');
+                        commentActions.style.display = 'flex';
+                        commentActions.style.gap = '5px';
+                        commentActions.style.marginTop = '4px';
+                        
+                        // Bouton pour marquer comme lu
+                        if (!comment.lu) {
+                            const markReadBtn = document.createElement('button');
+                            markReadBtn.textContent = 'Marquer comme lu';
+                            markReadBtn.style.fontSize = '11px';
+                            markReadBtn.style.padding = '2px 5px';
+                            markReadBtn.style.backgroundColor = '#10b981';
+                            markReadBtn.onclick = function() {
+                                marquerCommentaireLu(patient.id, comment.id);
+                            };
+                            commentActions.appendChild(markReadBtn);
+                        }
+                        
+                        // Bouton pour modifier
+                        const editBtn = document.createElement('button');
+                        editBtn.textContent = 'Modifier';
+                        editBtn.style.fontSize = '11px';
+                        editBtn.style.padding = '2px 5px';
+                        editBtn.style.backgroundColor = '#3b82f6';
+                        editBtn.onclick = function() {
+                            ouvrirModalModifierCommentaire(patient.id, comment.id);
+                        };
+                        commentActions.appendChild(editBtn);
+                        
+                        // Bouton pour supprimer
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = 'Supprimer';
+                        deleteBtn.style.fontSize = '11px';
+                        deleteBtn.style.padding = '2px 5px';
+                        deleteBtn.className = 'btn-delete';
+                        deleteBtn.onclick = function() {
+                            supprimerCommentaire(patient.id, comment.id);
+                        };
+                        commentActions.appendChild(deleteBtn);
+                        
+                        commentDiv.appendChild(commentText);
+                        commentDiv.appendChild(commentDate);
+                        commentDiv.appendChild(commentActions);
+                        commentContainer.appendChild(commentDiv);
+                    });
+                } else {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.textContent = 'Aucun commentaire';
+                    emptyMessage.style.fontStyle = 'italic';
+                    emptyMessage.style.color = '#666';
+                    emptyMessage.style.padding = '5px 0';
+                    commentContainer.appendChild(emptyMessage);
+                }
+                
+                tdCommentaires.appendChild(commentContainer);
+                
+                // Ajouter l'interface pour saisir un nouveau commentaire
+                const addCommentDiv = document.createElement('div');
+                addCommentDiv.className = 'add-comment';
+                
+                const commentInput = document.createElement('input');
+                commentInput.type = 'text';
+                commentInput.id = `commentInput_${patient.id}`;
+                commentInput.placeholder = 'Ajouter un commentaire';
+                
+                const addCommentBtn = document.createElement('button');
+                addCommentBtn.textContent = 'Ajouter';
+                addCommentBtn.style.marginTop = '0';
+                addCommentBtn.style.backgroundColor = '#3b82f6';
+                addCommentBtn.onclick = function() {
+                    ajouterCommentaire(patient.id);
+                };
+                
+                addCommentDiv.appendChild(commentInput);
+                addCommentDiv.appendChild(addCommentBtn);
+                tdCommentaires.appendChild(addCommentDiv);
+                
+                row.appendChild(tdCommentaires);
+                
+                // Actions
+                const tdActions = document.createElement('td');
+                
+                // Bouton Modifier
+                const btnModifier = document.createElement('button');
+                btnModifier.textContent = 'Modifier';
+                btnModifier.style.backgroundColor = '#3b82f6';
+                btnModifier.style.marginRight = '5px';
+                btnModifier.onclick = function() {
+                    ouvrirModalRenommerPatient(patient.id);
+                };
+                tdActions.appendChild(btnModifier);
+                
+                // Bouton Supprimer
+                const btnSupprimer = document.createElement('button');
+                btnSupprimer.textContent = 'Supprimer';
+                btnSupprimer.className = 'btn-delete';
+                btnSupprimer.onclick = function() {
+                    supprimerPatient(patient.id);
+                };
+                tdActions.appendChild(btnSupprimer);
+                
+                row.appendChild(tdActions);
+                
+                // Ajouter la ligne au tableau
+                tbody.appendChild(row);
+                
+                // Ajouter à la liste déroulante
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.nom} ${patient.prenom}`;
+                patientSelect.appendChild(option);
+            });
+        }
+
+        // Fonction pour rafraîchir le tableau des produits
+        function rafraichirTableau() {
+            const tbody = document.getElementById('stockTableBody');
+            tbody.innerHTML = '';
+            
+            // Convertir en tableau pour trier
+            const items = Object.entries(stockItems).map(([id, item]) => ({id, ...item}));
+            
+            // Trier par ordre décroissant (plus récent en haut)
+            items.sort((a, b) => b.ordre - a.ordre);
+            
+            items.forEach(item => {
+                // Vérifier si l'item correspond au filtre actif
+                let correspondAuFiltre = filtreActif === 'tous';
+                
+                if (filtreActif === 'depot') {
+                    correspondAuFiltre = item.statut === 'depot';
+                } else if (filtreActif === 'ferme') {
+                    correspondAuFiltre = item.statut === 'ferme';
+                } else if (['C1', 'EG', 'MG', 'AG'].includes(filtreActif)) {
+                    correspondAuFiltre = item.typeAppareil === filtreActif;
+                }
+                
+                // Si masquerAssignes est activé, ne pas afficher les produits assignés
+                const afficherSelonAssignation = !masquerAssignes || !item.patientId;
+                
+                if (correspondAuFiltre && afficherSelonAssignation) {
+                    const row = document.createElement('tr');
+                    
+                    // Ajouter une classe si le produit est assigné à un patient
+                    if (item.patientId) {
+                        row.classList.add('produit-assigne');
+                    }
+                    
+                    // Numéro de série
+                    const tdMatricule = document.createElement('td');
+                    tdMatricule.innerHTML = `
+                        <div style="display: flex; align-items: center;">
+                            <span style="font-family: Arial; color: #666;">${item.matricule}</span>
+                            <span class="item-type-indicator" style="background-color: ${getTypeColor(item)};">${getTypeText(item)}</span>
+                        </div>
+                    `;
+                    tdMatricule.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        afficherContextMenu(e, item.id);
+                    });
+                    row.appendChild(tdMatricule);
+                    
+                    // Type
+                    const tdType = document.createElement('td');
+                    const selectType = document.createElement('select');
+                    selectType.innerHTML = `
+                        <option value="" ${item.type === "" ? "selected" : ""}>Sélectionner</option>
+                        <option value="appareil" ${item.type === "appareil" ? "selected" : ""}>Appareil</option>
+                        <option value="chargeur" ${item.type === "chargeur" ? "selected" : ""}>Chargeur</option>
+                    `;
+                    selectType.addEventListener('change', function() {
+                        mettreAJourChamp(item.id, 'type', this.value);
+                    });
+                    tdType.appendChild(selectType);
+                    row.appendChild(tdType);
+                    
+                    // Type d'appareil
+                    const tdTypeAppareil = document.createElement('td');
+                    const selectTypeAppareil = document.createElement('select');
+                    selectTypeAppareil.innerHTML = `
+                        <option value="" ${item.typeAppareil === "" ? "selected" : ""}>Sélectionner</option>
+                        <option value="C1" ${item.typeAppareil === "C1" ? "selected" : ""}>C1</option>
+                        <option value="EG" ${item.typeAppareil === "EG" ? "selected" : ""}>EG</option>
+                        <option value="MG" ${item.typeAppareil === "MG" ? "selected" : ""}>MG</option>
+                        <option value="AG" ${item.typeAppareil === "AG" ? "selected" : ""}>AG</option>
+                    `;
+                    selectTypeAppareil.addEventListener('change', function() {
+                        mettreAJourChamp(item.id, 'typeAppareil', this.value);
+                    });
+                    tdTypeAppareil.appendChild(selectTypeAppareil);
+                    if (item.type !== 'appareil') {
+                        tdTypeAppareil.style.display = 'none';
+                    }
+                    row.appendChild(tdTypeAppareil);
+                    
+                    // Dénomination
+                    const tdDenomination = document.createElement('td');
+                    const inputDenomination = document.createElement('input');
+                    inputDenomination.type = 'text';
+                    inputDenomination.value = item.denomination || '';
+                    inputDenomination.placeholder = 'Dénomination du produit';
+                    inputDenomination.addEventListener('change', function() {
+                        mettreAJourChamp(item.id, 'denomination', this.value);
+                    });
+                    tdDenomination.appendChild(inputDenomination);
+                    row.appendChild(tdDenomination);
+                    
+                    // Statut
+                    const tdStatut = document.createElement('td');
+                    const selectStatut = document.createElement('select');
+                    selectStatut.innerHTML = `
+                        <option value="" ${item.statut === "" ? "selected" : ""}>Sélectionner</option>
+                        <option value="depot" ${item.statut === "depot" ? "selected" : ""}>Dépôt</option>
+                        <option value="ferme" ${item.statut === "ferme" ? "selected" : ""}>Fermé</option>
+                    `;
+                    selectStatut.addEventListener('change', function() {
+                        // Si "dépôt" est sélectionné, ouvrir le modal pour choisir la date
+                        if (this.value === 'depot') {
+                            produitStatutSelectionne = item.id;
+                            // Initialiser la date d'aujourd'hui dans le sélecteur
+                            const today = new Date().toISOString().split('T')[0];
+                            document.getElementById('dateDepotInput').value = today;
+                            document.getElementById('dateDepotModal').style.display = 'block';
+                        } else {
+                            // Pour les autres valeurs, mettre à jour directement
+                            mettreAJourChamp(item.id, 'statut', this.value);
+                            // Si le statut n'est plus "dépôt", supprimer la date de dépôt
+                            if (this.value !== 'depot' && item.dateDepot) {
+                                mettreAJourChamp(item.id, 'dateDepot', null);
+                            }
+                        }
+                    });
+                    tdStatut.appendChild(selectStatut);
+                    
+                    // Ajouter la date de dépôt et le timer si applicable
+                    if (item.statut === 'depot' && item.dateDepot) {
+                        const dateDepotDiv = document.createElement('div');
+                        dateDepotDiv.className = 'date-depot';
+                        dateDepotDiv.textContent = `Date de dépôt: ${new Date(item.dateDepot).toLocaleDateString()}`;
+                        tdStatut.appendChild(dateDepotDiv);
+                        
+                        const timerDiv = document.createElement('div');
+                        timerDiv.className = 'timer';
+                        timerDiv.textContent = calculerTempsRestant(item.dateDepot);
+                        tdStatut.appendChild(timerDiv);
+                    }
+                    
+                    row.appendChild(tdStatut);
+                    
+                    // Couleur
+                    const tdCouleur = document.createElement('td');
+                    const inputCouleur = document.createElement('input');
+                    inputCouleur.type = 'text';
+                    inputCouleur.value = item.couleur || '';
+                    inputCouleur.placeholder = 'Couleur du produit';
+                    inputCouleur.addEventListener('change', function() {
+                        mettreAJourChamp(item.id, 'couleur', this.value);
+                    });
+                    tdCouleur.appendChild(inputCouleur);
+                    row.appendChild(tdCouleur);
+                    
+                    // Date d'ajout
+                    const tdDate = document.createElement('td');
+                    if (item.dateAjout) {
+                        const date = new Date(item.dateAjout.seconds * 1000);
+                        tdDate.textContent = date.toLocaleDateString();
+                    }
+                    row.appendChild(tdDate);
+                    
+                    // Actions
+                    const tdActions = document.createElement('td');
+                    
+                    // Bouton Supprimer
+                    const btnSupprimer = document.createElement('button');
+                    btnSupprimer.textContent = 'Supprimer';
+                    btnSupprimer.className = 'btn-delete';
+                    btnSupprimer.onclick = function() {
+                        supprimerProduit(item.id);
+                    };
+                    tdActions.appendChild(btnSupprimer);
+                    
+                    // Bouton Assigner/Libérer
+                    if (!item.patientId) {
+                        const btnAssigner = document.createElement('button');
+                        btnAssigner.textContent = 'Assigner';
+                        btnAssigner.style.marginLeft = '5px';
+                        btnAssigner.style.backgroundColor = '#16a34a';
+                        btnAssigner.onclick = function() {
+                            produitSelectionne = item.id;
+                            ouvrirModalAssigner();
+                        };
+                        tdActions.appendChild(btnAssigner);
+                    } else {
+                        const btnLiberer = document.createElement('button');
+                        btnLiberer.textContent = 'Libérer';
+                        btnLiberer.style.marginLeft = '5px';
+                        btnLiberer.style.backgroundColor = '#9333ea';
+                        btnLiberer.onclick = function() {
+                            libererProduit(item.id);
+                        };
+                        tdActions.appendChild(btnLiberer);
+                    }
+                    
+                    row.appendChild(tdActions);
+                    
+                    tbody.appendChild(row);
+                }
+            });
+        }
+
+        // Fonction pour obtenir la couleur du type
+        function getTypeColor(item) {
+            if (item.type === 'appareil') {
+                switch (item.typeAppareil) {
+                    case 'C1': return '#8b5cf6';
+                    case 'EG': return '#ec4899';
+                    case 'MG': return '#14b8a6';
+                    case 'AG': return '#f97316';
+                    default: return '#6b7280';
+                }
+            } else if (item.type === 'chargeur') {
+                return '#0ea5e9';
+            }
+            return '#6b7280';
+        }
+
+        // Fonction pour obtenir le texte du type
+        function getTypeText(item) {
+            if (item.type === 'appareil') {
+                return item.typeAppareil || 'N/A';
+            } else if (item.type === 'chargeur') {
+                return 'Chargeur';
+            }
+            return 'N/A';
+        }
+
+        // Fonction pour vérifier les dates de dépôt
+        function verifierDatesDepot() {
+            let miseAJour = false;
+            const maintenant = new Date();
+            
+            for (let id in stockItems) {
+                const produit = stockItems[id];
+                if (produit.statut === 'depot' && produit.dateDepot) {
+                    const dateDepot = new Date(produit.dateDepot);
+                    const dateLimite = new Date(dateDepot);
+                    dateLimite.setMonth(dateLimite.getMonth() + 2);
+                    
+                    if (maintenant >= dateLimite) {
+                        produit.statut = 'ferme';
+                        produit.statutAuto = true;
+                        
+                        // Mettre à jour dans Firebase
+                        updateDoc(doc(db, "stockItems", id), {
+                            statut: 'ferme',
+                            statutAuto: true
+                        }).catch(error => {
+                            console.error("Erreur lors du changement automatique de statut:", error);
+                        });
+                        
+                        miseAJour = true;
+                    }
+                }
+            }
+            
+            if (miseAJour) {
+                rafraichirTableau();
+                afficherNotification("Des produits en dépôt ont été fermés automatiquement", "warning");
+            }
+        }
+
+        // Fonction pour calculer le temps restant
+        function calculerTempsRestant(dateDepot) {
+            const maintenant = new Date();
+            const dateDepotObj = new Date(dateDepot);
+            const dateLimite = new Date(dateDepotObj);
+            dateLimite.setMonth(dateLimite.getMonth() + 2);
+            
+            const diff = dateLimite - maintenant;
+            
+            if (diff <= 0) {
+                return "Passage à 'Fermé' imminent";
+            }
+            
+            const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const heures = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            return `J-${jours} (${jours} jour(s) et ${heures} heure(s) avant fermeture)`;
+        }
+
+        // Fonction pour mettre à jour un champ
+        async function mettreAJourChamp(id, champ, valeur) {
+            try {
+                await updateDoc(doc(db, "stockItems", id), {
+                    [champ]: valeur
+                });
+                
+                afficherNotification("Modification enregistrée", "success");
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour:", error);
+                afficherNotification("Erreur lors de la mise à jour", "error");
+            }
+        }
+
+        // Fonction pour supprimer un produit
+        async function supprimerProduit(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+                try {
+                    const produit = stockItems[id];
+                    
+                    if (produit.patientId) {
+                        const patient = patients.find(p => p.id === produit.patientId);
+                        if (patient && patient.produitsAssignes) {
+                            const index = patient.produitsAssignes.indexOf(id);
+                            if (index > -1) {
+                                patient.produitsAssignes.splice(index, 1);
+                                await updateDoc(doc(db, "patients", patient.id), {
+                                    produitsAssignes: patient.produitsAssignes
+                                });
+                            }
+                        }
+                    }
+                    
+                    await deleteDoc(doc(db, "stockItems", id));
+                    
+                    afficherNotification("Produit supprimé avec succès", "success");
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    afficherNotification("Erreur lors de la suppression", "error");
+                }
+            }
+        }
+
+        // Fonction pour supprimer un patient
+        async function supprimerPatient(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce patient ?')) {
+                try {
+                    const patient = patients.find(p => p.id === id);
+                    
+                    if (patient.produitsAssignes && patient.produitsAssignes.length > 0) {
+                        if (!confirm('Ce patient a des produits assignés. Voulez-vous libérer ces produits ?')) {
+                            return;
+                        }
+                        
+                        // Libérer tous les produits assignés
+                        for (const produitId of patient.produitsAssignes) {
+                            await updateDoc(doc(db, "stockItems", produitId), {
+                                patientId: null,
+                                statutPatient: "Neutre"
+                            });
+                        }
+                    }
+                    
+                    await deleteDoc(doc(db, "patients", id));
+                    
+                    afficherNotification("Patient supprimé avec succès", "success");
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    afficherNotification("Erreur lors de la suppression", "error");
+                }
+            }
+        }
+
+        // Fonction pour libérer un produit
+        async function libererProduit(id) {
+            if (!confirm('Voulez-vous vraiment libérer ce produit ?')) {
+                return;
+            }
+            
+            try {
+                const produit = stockItems[id];
+                const patientId = produit.patientId;
+                
+                if (patientId) {
+                    const patient = patients.find(p => p.id === patientId);
+                    if (patient && patient.produitsAssignes) {
+                        const index = patient.produitsAssignes.indexOf(id);
+                        if (index > -1) {
+                            patient.produitsAssignes.splice(index, 1);
+                            await updateDoc(doc(db, "patients", patientId), {
+                                produitsAssignes: patient.produitsAssignes
+                            });
+                        }
+                    }
+                }
+                
+                await updateDoc(doc(db, "stockItems", id), {
+                    patientId: null,
+                    statutPatient: "Neutre"
+                });
+                
+                afficherNotification("Produit libéré avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de la libération:", error);
+                afficherNotification("Erreur lors de la libération", "error");
+            }
+        }
+
+        // Fonction pour assigner un produit à un patient
+        async function assignerProduitPatientExistant() {
+            const patientId = document.getElementById('patientSelect').value;
+            
+            if (!patientId) {
+                return alert('Veuillez sélectionner un patient');
+            }
+            
+            if (!produitSelectionne) {
+                return alert('Aucun produit sélectionné');
+            }
+            
+            try {
+                const produit = stockItems[produitSelectionne];
+                
+                if (produit.patientId) {
+                    const ancienPatient = patients.find(p => p.id === produit.patientId);
+                    if (ancienPatient && ancienPatient.produitsAssignes) {
+                        const index = ancienPatient.produitsAssignes.indexOf(produitSelectionne);
+                        if (index > -1) {
+                            ancienPatient.produitsAssignes.splice(index, 1);
+                            await updateDoc(doc(db, "patients", ancienPatient.id), {
+                                produitsAssignes: ancienPatient.produitsAssignes
+                            });
+                        }
+                    }
+                }
+                
+                const patient = patients.find(p => p.id === patientId);
+                if (!patient.produitsAssignes) {
+                    patient.produitsAssignes = [];
+                }
+                
+                if (!patient.produitsAssignes.includes(produitSelectionne)) {
+                    patient.produitsAssignes.push(produitSelectionne);
+                }
+                
+                await updateDoc(doc(db, "patients", patientId), {
+                    produitsAssignes: patient.produitsAssignes
+                });
+                
+                await updateDoc(doc(db, "stockItems", produitSelectionne), {
+                    patientId: patientId,
+                    statutPatient: "Neutre"
+                });
+                
+                fermerModal('assignerModal');
+                afficherNotification("Produit assigné avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'assignation:", error);
+                afficherNotification("Erreur lors de l'assignation", "error");
+            }
+        }
+
+        // Fonction pour basculer l'affichage des produits assignés
+        function toggleProduitsAssignes() {
+            masquerAssignes = !masquerAssignes;
+            rafraichirTableau();
+            
+            const bouton = document.getElementById('toggleAssignesBtn');
+            bouton.textContent = masquerAssignes ? 'Afficher produits assignés' : 'Masquer produits assignés';
+        }
+
+        // Fonction pour basculer l'affichage des patients non assignés
+        function togglePatientsNonAssignes() {
+            masquerPatientsNonAssignes = !masquerPatientsNonAssignes;
+            rafraichirTableauPatients();
+            
+            const bouton = document.getElementById('togglePatientsNonAssignesBtn');
+            bouton.textContent = masquerPatientsNonAssignes ? 'Afficher patients non assignés' : 'Masquer patients non assignés';
+        }
+
+        // Fonction pour basculer la synchronisation automatique
+        function toggleSyncAuto() {
+            synchronisationAutomatique = !synchronisationAutomatique;
+            
+            const checkbox = document.getElementById('syncAutoToggle');
+            const slider = document.getElementById('syncAutoSlider');
+            
+            if (checkbox) {
+                checkbox.checked = synchronisationAutomatique;
+            }
+            
+            if (slider) {
+                slider.style.backgroundColor = synchronisationAutomatique ? '#10b981' : '#ccc';
+            }
+            
+            const syncStatus = document.getElementById('syncStatus');
+            if (syncStatus) {
+                const lastSync = derniereSynchronisation > 0 
+                    ? new Date(derniereSynchronisation).toLocaleString() 
+                    : "Jamais";
+                
+                syncStatus.textContent = `Dernière synchronisation: ${lastSync}${synchronisationAutomatique ? " (Auto activé)" : " (Auto désactivé)"}`;
+            }
+            
+            afficherNotification(
+                `Synchronisation automatique ${synchronisationAutomatique ? "activée" : "désactivée"}`,
+                synchronisationAutomatique ? "success" : "info"
+            );
+            
+            if (synchronisationAutomatique) {
+                synchroniserPatientsDepuisSuivi();
+            }
+        }
+
+        // Initialisation au chargement de la page
+        window.addEventListener('DOMContentLoaded', function() {
+            // Mettre à jour les affichages
+            mettreAJourCompteur();
+            rafraichirTableau();
+            rafraichirTableauPatients();
+            
+            // Vérifier les dates de dépôt au démarrage
+            verifierDatesDepot();
+            
+            // Initialiser la synchronisation automatique
+            const checkbox = document.getElementById('syncAutoToggle');
+            if (checkbox) {
+                checkbox.checked = synchronisationAutomatique;
+            }
+            
+            const slider = document.getElementById('syncAutoSlider');
+            if (slider) {
+                slider.style.backgroundColor = synchronisationAutomatique ? '#10b981' : '#ccc';
+            }
+            
+            // Synchroniser les patients au démarrage
+            synchroniserPatientsDepuisSuivi();
+            
+            // Initialiser la recherche rapide de patients
+            initialiserRecherchePatients();
+        });
+
+        // Exposer les fonctions nécessaires globalement
+        window.changerOnglet = changerOnglet;
+        window.ajouterMatricule = ajouterMatricule;
+        window.filtrerProduits = filtrerProduits;
+        window.toggleProduitsAssignes = toggleProduitsAssignes;
+        window.togglePatientsNonAssignes = togglePatientsNonAssignes;
+        window.synchroniserPatientsDepuisSuivi = synchroniserPatientsDepuisSuivi;
+        window.toggleSyncAuto = toggleSyncAuto;
+        window.ouvrirModalAssigner = ouvrirModalAssigner;
+        window.ouvrirModalChangerNumero = ouvrirModalChangerNumero;
+        window.fermerModal = fermerModal;
+        window.assignerProduitPatientExistant = assignerProduitPatientExistant;
+        window.confirmerDateDepot = confirmerDateDepot;
+        window.changerNumeroSerie = changerNumeroSerie;
+        window.renommerPatient = renommerPatient;
+        window.confirmerModificationCommentaire = confirmerModificationCommentaire;
+
+        // Fonction pour afficher le menu contextuel
+        function afficherContextMenu(e, id) {
+            e.preventDefault();
+            produitSelectionne = id;
+            
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            
+            // Fermer le menu au clic ailleurs
+            document.addEventListener('click', fermerContextMenu);
+            return false;
+        }
+
+        // Fonction pour fermer le menu contextuel
+        function fermerContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+            document.removeEventListener('click', fermerContextMenu);
+        }
+
+        // Fonction pour ouvrir le modal d'assignation
+        function ouvrirModalAssigner() {
+            fermerContextMenu();
+            
+            if (!produitSelectionne || !stockItems[produitSelectionne]) {
+                return alert('Aucun produit sélectionné');
+            }
+            
+            const produit = stockItems[produitSelectionne];
+            document.getElementById('produitInfo').innerHTML = `
+                <strong>Numéro de série:</strong> ${produit.matricule}<br>
+                <strong>Type:</strong> ${produit.type || 'Non défini'}<br>
+                <strong>Dénomination:</strong> ${produit.denomination || 'Non définie'}<br>
+                ${produit.patientId ? `<strong>Statut patient:</strong> ${produit.statutPatient}<br>` : ''}
+            `;
+            
+            document.getElementById('assignerModal').style.display = 'block';
+        }
+
+        // Fonction pour ouvrir le modal de changement de numéro
+        function ouvrirModalChangerNumero() {
+            fermerContextMenu();
+            
+            if (!produitSelectionne || !stockItems[produitSelectionne]) {
+                return alert('Aucun produit sélectionné');
+            }
+            
+            const produit = stockItems[produitSelectionne];
+            document.getElementById('produitInfoNumero').innerHTML = `
+                <strong>Numéro de série actuel:</strong> ${produit.matricule}<br>
+                <strong>Type:</strong> ${produit.type || 'Non défini'}<br>
+                <strong>Dénomination:</strong> ${produit.denomination || 'Non définie'}<br>
+            `;
+            
+            document.getElementById('nouveauNumeroInput').value = produit.matricule;
+            document.getElementById('changerNumeroModal').style.display = 'block';
+        }
+
+        // Fonction pour ouvrir le modal de renommage de patient
+        function ouvrirModalRenommerPatient(patientId) {
+            const patient = patients.find(p => p.id === patientId);
+            if (!patient) {
+                return alert('Patient introuvable');
+            }
+            
+            patientSelectionne = patientId;
+            document.getElementById('patientInfoRenommer').innerHTML = `
+                <strong>Nom actuel:</strong> ${patient.nom}<br>
+                <strong>Prénom actuel:</strong> ${patient.prenom}<br>
+            `;
+            
+            document.getElementById('nouveauNomPatientEdit').value = patient.nom;
+            document.getElementById('nouveauPrenomPatientEdit').value = patient.prenom;
+            document.getElementById('renommerPatientModal').style.display = 'block';
+        }
+
+        // Fonction pour fermer un modal
+        function fermerModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            
+            switch (modalId) {
+                case 'assignerModal':
+                    produitSelectionne = null;
+                    break;
+                case 'dateDepotModal':
+                    produitStatutSelectionne = null;
+                    break;
+                case 'changerNumeroModal':
+                    produitSelectionne = null;
+                    break;
+                case 'renommerPatientModal':
+                    patientSelectionne = null;
+                    break;
+                case 'modifierCommentaireModal':
+                    commentaireSelectionne = null;
+                    patientCommentaireSelectionne = null;
+                    break;
+            }
+        }
+
+        // Fonction pour confirmer la date de dépôt
+        async function confirmerDateDepot() {
+            const dateDepot = document.getElementById('dateDepotInput').value;
+            
+            if (!dateDepot) {
+                return alert('Veuillez sélectionner une date');
+            }
+            
+            if (!produitStatutSelectionne || !stockItems[produitStatutSelectionne]) {
+                fermerModal('dateDepotModal');
+                return alert('Erreur: produit non trouvé');
+            }
+            
+            try {
+                await updateDoc(doc(db, "stockItems", produitStatutSelectionne), {
+                    statut: 'depot',
+                    dateDepot: dateDepot
+                });
+                
+                // Mettre à jour l'objet local aussi
+                stockItems[produitStatutSelectionne].statut = 'depot';
+                stockItems[produitStatutSelectionne].dateDepot = dateDepot;
+                
+                fermerModal('dateDepotModal');
+                afficherNotification("Date de dépôt enregistrée", "success");
+                
+                // Mettre à jour l'affichage immédiatement
+                rafraichirTableau();
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement de la date:", error);
+                afficherNotification("Erreur lors de l'enregistrement", "error");
+            }
+        }
+
+        // Fonction pour changer le numéro de série
+        async function changerNumeroSerie() {
+            if (!produitSelectionne || !stockItems[produitSelectionne]) {
+                fermerModal('changerNumeroModal');
+                return alert('Aucun produit sélectionné');
+            }
+            
+            const nouveauNumero = document.getElementById('nouveauNumeroInput').value.trim();
+            
+            if (!nouveauNumero) {
+                return alert('Veuillez entrer un numéro de série');
+            }
+            
+            try {
+                // Vérifier si le nouveau numéro existe déjà
+                const snapshot = await getDocs(query(collection(db, "stockItems"), where("matricule", "==", nouveauNumero)));
+                if (!snapshot.empty) {
+                    return alert('Ce numéro de série existe déjà');
+                }
+                
+                await updateDoc(doc(db, "stockItems", produitSelectionne), {
+                    matricule: nouveauNumero
+                });
+                
+                fermerModal('changerNumeroModal');
+                afficherNotification("Numéro de série modifié avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors du changement de numéro:", error);
+                afficherNotification("Erreur lors du changement de numéro", "error");
+            }
+        }
+
+        // Fonction pour renommer un patient
+        async function renommerPatient() {
+            if (!patientSelectionne) {
+                fermerModal('renommerPatientModal');
+                return alert('Aucun patient sélectionné');
+            }
+            
+            const nouveauNom = document.getElementById('nouveauNomPatientEdit').value.trim();
+            const nouveauPrenom = document.getElementById('nouveauPrenomPatientEdit').value.trim();
+            
+            if (!nouveauNom || !nouveauPrenom) {
+                return alert('Veuillez entrer un nom et un prénom');
+            }
+            
+            try {
+                await updateDoc(doc(db, "patients", patientSelectionne), {
+                    nom: nouveauNom,
+                    prenom: nouveauPrenom
+                });
+                
+                fermerModal('renommerPatientModal');
+                afficherNotification("Patient modifié avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de la modification:", error);
+                afficherNotification("Erreur lors de la modification", "error");
+            }
+        }
+
+        // Fonction pour confirmer la modification d'un commentaire
+        async function confirmerModificationCommentaire() {
+            if (!patientCommentaireSelectionne || !commentaireSelectionne) {
+                fermerModal('modifierCommentaireModal');
+                return alert('Erreur: commentaire non trouvé');
+            }
+            
+            const nouveauTexte = document.getElementById('nouveauTexteCommentaire').value.trim();
+            
+            if (!nouveauTexte) {
+                return alert('Veuillez entrer un texte');
+            }
+            
+            try {
+                const patient = patients.find(p => p.id === patientCommentaireSelectionne);
+                if (!patient) {
+                    throw new Error('Patient non trouvé');
+                }
+                
+                const commentaire = patient.commentaires.find(c => c.id === commentaireSelectionne);
+                if (!commentaire) {
+                    throw new Error('Commentaire non trouvé');
+                }
+                
+                commentaire.texte = nouveauTexte;
+                commentaire.date = new Date().toLocaleString() + ' (modifié)';
+                
+                await updateDoc(doc(db, "patients", patientCommentaireSelectionne), {
+                    commentaires: patient.commentaires
+                });
+                
+                fermerModal('modifierCommentaireModal');
+                afficherNotification("Commentaire modifié avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de la modification:", error);
+                afficherNotification("Erreur lors de la modification", "error");
+            }
+        }
+
+        // Fonction pour filtrer les produits
+        function filtrerProduits(filtre) {
+            filtreActif = filtre;
+            
+            document.querySelectorAll('.filtre-btn').forEach(btn => {
+                if (btn.getAttribute('data-filtre') === filtre) {
+                    btn.classList.add('active');
+                    btn.style.opacity = '1';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.opacity = '0.7';
+                }
+            });
+            
+            rafraichirTableau();
+        }
+
+        // Fonction pour sauvegarder manuellement
+        async function sauvegardeManuelle() {
+            try {
+                // Sauvegarder tous les produits
+                for (const id in stockItems) {
+                    await updateDoc(doc(db, "stockItems", id), stockItems[id]);
+                }
+                
+                // Sauvegarder tous les patients
+                for (const patient of patients) {
+                    await updateDoc(doc(db, "patients", patient.id), patient);
+                }
+                
+                afficherNotification("Sauvegarde manuelle effectuée", "success");
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde:", error);
+                afficherNotification("Erreur lors de la sauvegarde", "error");
+            }
+        }
+
+        // Exposer les fonctions supplémentaires globalement
+        window.afficherContextMenu = afficherContextMenu;
+        window.fermerContextMenu = fermerContextMenu;
+        window.sauvegardeManuelle = sauvegardeManuelle;
+
+        // Nouvelle fonction pour mettre à jour le statut patient d'un produit
+        async function updateProduitStatut(produitId, nouveauStatut) {
+            try {
+                await updateDoc(doc(db, "stockItems", produitId), {
+                    statutPatient: nouveauStatut
+                });
+                
+                // Mettre à jour l'objet local immédiatement
+                if (stockItems[produitId]) {
+                    stockItems[produitId].statutPatient = nouveauStatut;
+                }
+                
+                // Rafraîchir l'affichage pour mettre à jour la couleur de la ligne
+                rafraichirTableauPatients();
+                
+                afficherNotification("Statut du produit mis à jour", "success");
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour du statut:", error);
+                afficherNotification("Erreur lors de la mise à jour du statut", "error");
+            }
+        }
+
+        // Nouvelle fonction pour retirer un produit d'un patient
+        async function retirerProduitDuPatient(produitId, patientId) {
+            if (!confirm('Voulez-vous vraiment retirer ce produit du patient ?')) {
+                return;
+            }
+            
+            try {
+                // Mise à jour du produit
+                await updateDoc(doc(db, "stockItems", produitId), {
+                    patientId: null,
+                    statutPatient: "Neutre"
+                });
+                
+                // Mise à jour du patient
+                const patient = patients.find(p => p.id === patientId);
+                if (patient && patient.produitsAssignes) {
+                    const index = patient.produitsAssignes.indexOf(produitId);
+                    if (index > -1) {
+                        patient.produitsAssignes.splice(index, 1);
+                        await updateDoc(doc(db, "patients", patientId), {
+                            produitsAssignes: patient.produitsAssignes
+                        });
+                    }
+                }
+                
+                afficherNotification("Produit retiré avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors du retrait du produit:", error);
+                afficherNotification("Erreur lors du retrait du produit", "error");
+            }
+        }
+        
+        // Fonction pour ajouter un commentaire
+        async function ajouterCommentaire(patientId) {
+            const input = document.getElementById(`commentInput_${patientId}`);
+            const texte = input.value.trim();
+            
+            if (!texte) {
+                return alert('Veuillez entrer un commentaire');
+            }
+            
+            try {
+                const patient = patients.find(p => p.id === patientId);
+                if (!patient) {
+                    throw new Error('Patient non trouvé');
+                }
+                
+                if (!patient.commentaires) {
+                    patient.commentaires = [];
+                }
+                
+                const nouveauCommentaire = {
+                    id: Date.now().toString(), // Utiliser un timestamp comme ID unique
+                    texte: texte,
+                    date: new Date().toLocaleString(),
+                    lu: false
+                };
+                
+                patient.commentaires.unshift(nouveauCommentaire); // Ajouter au début du tableau
+                
+                await updateDoc(doc(db, "patients", patientId), {
+                    commentaires: patient.commentaires
+                });
+                
+                input.value = ''; // Vider le champ de saisie
+                afficherNotification("Commentaire ajouté avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'ajout du commentaire:", error);
+                afficherNotification("Erreur lors de l'ajout du commentaire", "error");
+            }
+        }
+        
+        // Fonction pour marquer un commentaire comme lu
+        async function marquerCommentaireLu(patientId, commentaireId) {
+            try {
+                const patient = patients.find(p => p.id === patientId);
+                if (!patient || !patient.commentaires) {
+                    throw new Error('Patient ou commentaires non trouvés');
+                }
+                
+                const commentaire = patient.commentaires.find(c => c.id === commentaireId);
+                if (!commentaire) {
+                    throw new Error('Commentaire non trouvé');
+                }
+                
+                commentaire.lu = true;
+                
+                await updateDoc(doc(db, "patients", patientId), {
+                    commentaires: patient.commentaires
+                });
+                
+                afficherNotification("Commentaire marqué comme lu", "success");
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour du commentaire:", error);
+                afficherNotification("Erreur lors de la mise à jour", "error");
+            }
+        }
+        
+        // Fonction pour supprimer un commentaire
+        async function supprimerCommentaire(patientId, commentaireId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
+                return;
+            }
+            
+            try {
+                const patient = patients.find(p => p.id === patientId);
+                if (!patient || !patient.commentaires) {
+                    throw new Error('Patient ou commentaires non trouvés');
+                }
+                
+                const index = patient.commentaires.findIndex(c => c.id === commentaireId);
+                if (index === -1) {
+                    throw new Error('Commentaire non trouvé');
+                }
+                
+                patient.commentaires.splice(index, 1);
+                
+                await updateDoc(doc(db, "patients", patientId), {
+                    commentaires: patient.commentaires
+                });
+                
+                afficherNotification("Commentaire supprimé avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de la suppression du commentaire:", error);
+                afficherNotification("Erreur lors de la suppression", "error");
+            }
+        }
+        
+        // Fonction pour ouvrir le modal de modification d'un commentaire
+        function ouvrirModalModifierCommentaire(patientId, commentaireId) {
+            const patient = patients.find(p => p.id === patientId);
+            if (!patient || !patient.commentaires) {
+                return alert('Patient ou commentaires non trouvés');
+            }
+            
+            const commentaire = patient.commentaires.find(c => c.id === commentaireId);
+            if (!commentaire) {
+                return alert('Commentaire non trouvé');
+            }
+            
+            patientCommentaireSelectionne = patientId;
+            commentaireSelectionne = commentaireId;
+            
+            document.getElementById('commentaireInfo').innerHTML = `
+                <strong>Date:</strong> ${commentaire.date}<br>
+                <strong>Texte actuel:</strong> ${commentaire.texte}<br>
+            `;
+            
+            document.getElementById('nouveauTexteCommentaire').value = commentaire.texte;
+            document.getElementById('modifierCommentaireModal').style.display = 'block';
+        }
+        
+        // Fonction pour afficher le menu contextuel pour les patients
+        function afficherContextMenuPatient(e, patientId) {
+            e.preventDefault();
+            patientSelectionne = patientId;
+            
+            const menu = document.getElementById('contextMenuPatient');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+            
+            // Fermer le menu au clic ailleurs
+            document.addEventListener('click', fermerContextMenuPatient);
+            return false;
+        }
+
+        // Fonction pour fermer le menu contextuel des patients
+        function fermerContextMenuPatient() {
+            document.getElementById('contextMenuPatient').style.display = 'none';
+            document.removeEventListener('click', fermerContextMenuPatient);
+        }
+
+        // Fonction pour ouvrir le modal d'assignation de numéros de série pour un patient
+        function ouvrirModalAssignerNumero() {
+            fermerContextMenuPatient();
+            
+            if (!patientSelectionne) {
+                return alert('Aucun patient sélectionné');
+            }
+            
+            const patient = patients.find(p => p.id === patientSelectionne);
+            if (!patient) {
+                return alert('Patient introuvable');
+            }
+            
+            document.getElementById('patientInfoNumeros').innerHTML = `
+                <strong>Patient:</strong> ${patient.nom} ${patient.prenom}
+            `;
+            
+            // Remplir la liste des numéros de série disponibles
+            const numerosList = document.getElementById('numerosDisponiblesList');
+            numerosList.innerHTML = '';
+            
+            // Convertir en tableau pour trier
+            const items = Object.entries(stockItems).map(([id, item]) => ({id, ...item}));
+            
+            // Trier par numéro de série
+            items.sort((a, b) => a.matricule.localeCompare(b.matricule));
+            
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                
+                // Ajouter une classe si le produit est déjà assigné à ce patient
+                if (item.patientId === patientSelectionne) {
+                    row.classList.add('produit-assigne');
+                }
+                
+                // Case à cocher pour sélection
+                const tdCheck = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = item.id;
+                checkbox.disabled = item.patientId && item.patientId !== patientSelectionne; // Désactiver si déjà assigné à un autre patient
+                checkbox.checked = item.patientId === patientSelectionne;
+                tdCheck.appendChild(checkbox);
+                row.appendChild(tdCheck);
+                
+                // Numéro de série
+                const tdMatricule = document.createElement('td');
+                tdMatricule.textContent = item.matricule;
+                row.appendChild(tdMatricule);
+                
+                // Type
+                const tdType = document.createElement('td');
+                tdType.textContent = item.type || 'Non défini';
+                if (item.typeAppareil && item.type === 'appareil') {
+                    tdType.textContent += ` (${item.typeAppareil})`;
+                }
+                row.appendChild(tdType);
+                
+                // Statut
+                const tdStatut = document.createElement('td');
+                if (item.patientId) {
+                    if (item.patientId === patientSelectionne) {
+                        tdStatut.textContent = 'Assigné à ce patient';
+                        tdStatut.style.color = '#16a34a';
+                    } else {
+                        const patientAssigne = patients.find(p => p.id === item.patientId);
+                        tdStatut.textContent = `Assigné à ${patientAssigne ? patientAssigne.nom + ' ' + patientAssigne.prenom : 'un autre patient'}`;
+                        tdStatut.style.color = '#ef4444';
+                    }
+                } else {
+                    tdStatut.textContent = 'Disponible';
+                    tdStatut.style.color = '#3b82f6';
+                }
+                row.appendChild(tdStatut);
+                
+                numerosList.appendChild(row);
+            });
+            
+            document.getElementById('assignerNumeroModal').style.display = 'block';
+        }
+
+        // Fonction pour confirmer l'assignation des numéros de série
+        async function confirmerAssignationNumeros() {
+            if (!patientSelectionne) {
+                fermerModal('assignerNumeroModal');
+                return alert('Aucun patient sélectionné');
+            }
+            
+            const patient = patients.find(p => p.id === patientSelectionne);
+            if (!patient) {
+                fermerModal('assignerNumeroModal');
+                return alert('Patient introuvable');
+            }
+            
+            const checkboxes = document.querySelectorAll('#numerosDisponiblesList input[type="checkbox"]:checked:not(:disabled)');
+            if (checkboxes.length === 0) {
+                return alert('Veuillez sélectionner au moins un numéro de série');
+            }
+            
+            try {
+                // Initialiser le tableau s'il n'existe pas
+                if (!patient.produitsAssignes) {
+                    patient.produitsAssignes = [];
+                }
+                
+                // Pour chaque produit sélectionné
+                for (const checkbox of checkboxes) {
+                    const produitId = checkbox.value;
+                    
+                    // Si le produit est déjà assigné à ce patient, passer au suivant
+                    if (patient.produitsAssignes.includes(produitId)) {
+                        continue;
+                    }
+                    
+                    // Si le produit est assigné à un autre patient, le libérer d'abord
+                    const produit = stockItems[produitId];
+                    if (produit.patientId && produit.patientId !== patient.id) {
+                        const ancienPatient = patients.find(p => p.id === produit.patientId);
+                        if (ancienPatient && ancienPatient.produitsAssignes) {
+                            const index = ancienPatient.produitsAssignes.indexOf(produitId);
+                            if (index > -1) {
+                                ancienPatient.produitsAssignes.splice(index, 1);
+                                await updateDoc(doc(db, "patients", ancienPatient.id), {
+                                    produitsAssignes: ancienPatient.produitsAssignes
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Ajouter le produit au patient
+                    patient.produitsAssignes.push(produitId);
+                    
+                    // Mettre à jour le produit
+                    await updateDoc(doc(db, "stockItems", produitId), {
+                        patientId: patient.id,
+                        statutPatient: "Neutre"
+                    });
+                }
+                
+                // Mettre à jour le patient
+                await updateDoc(doc(db, "patients", patient.id), {
+                    produitsAssignes: patient.produitsAssignes
+                });
+                
+                fermerModal('assignerNumeroModal');
+                afficherNotification("Numéros de série assignés avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'assignation des numéros:", error);
+                afficherNotification("Erreur lors de l'assignation", "error");
+            }
+        }
+
+        // Exposer les fonctions nécessaires globalement
+        window.changerOnglet = changerOnglet;
+        window.ajouterMatricule = ajouterMatricule;
+        window.filtrerProduits = filtrerProduits;
+        window.toggleProduitsAssignes = toggleProduitsAssignes;
+        window.togglePatientsNonAssignes = togglePatientsNonAssignes;
+        window.synchroniserPatientsDepuisSuivi = synchroniserPatientsDepuisSuivi;
+        window.toggleSyncAuto = toggleSyncAuto;
+        window.ouvrirModalAssigner = ouvrirModalAssigner;
+        window.ouvrirModalChangerNumero = ouvrirModalChangerNumero;
+        window.fermerModal = fermerModal;
+        window.assignerProduitPatientExistant = assignerProduitPatientExistant;
+        window.confirmerDateDepot = confirmerDateDepot;
+        window.changerNumeroSerie = changerNumeroSerie;
+        window.renommerPatient = renommerPatient;
+        window.confirmerModificationCommentaire = confirmerModificationCommentaire;
+        window.afficherContextMenu = afficherContextMenu;
+        window.fermerContextMenu = fermerContextMenu;
+        window.sauvegardeManuelle = sauvegardeManuelle;
+        window.afficherContextMenuPatient = afficherContextMenuPatient;
+        window.fermerContextMenuPatient = fermerContextMenuPatient;
+        window.ouvrirModalAssignerNumero = ouvrirModalAssignerNumero;
+        window.confirmerAssignationNumeros = confirmerAssignationNumeros;
+
+        // Fonction pour rechercher des patients
+        function rechercherPatients(terme) {
+            const dropdown = document.getElementById('patientSearchDropdown');
+            dropdown.innerHTML = '';
+            
+            if (!terme || terme.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            const termeRecherche = terme.toLowerCase();
+            const correspondances = patients.filter(patient => {
+                const nomComplet = `${patient.nom || ''} ${patient.prenom || ''}`.toLowerCase();
+                return nomComplet.includes(termeRecherche);
+            });
+            
+            if (correspondances.length > 0) {
+                correspondances.slice(0, 10).forEach(patient => {
+                    const item = document.createElement('div');
+                    item.className = 'patient-item';
+                    
+                    // Information du patient
+                    const infoDiv = document.createElement('div');
+                    infoDiv.innerHTML = `
+                        <strong>${patient.nom || ''} ${patient.prenom || ''}</strong>
+                        ${patient.dateCreation ? `<div class="patient-info">Ajouté le: ${new Date(patient.dateCreation.seconds * 1000).toLocaleDateString()}</div>` : ''}
+                        ${patient.produitsAssignes && patient.produitsAssignes.length > 0 ? 
+                            `<div class="patient-info">Produits assignés: ${patient.produitsAssignes.length}</div>` : 
+                            '<div class="patient-info">Aucun produit assigné</div>'}
+                    `;
+                    item.appendChild(infoDiv);
+                    
+                    // Actions pour ce patient
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'patient-actions';
+                    
+                    // Bouton pour assigner un produit
+                    const btnAssign = document.createElement('button');
+                    btnAssign.textContent = 'Assigner produit';
+                    btnAssign.style.backgroundColor = '#10b981';
+                    btnAssign.style.padding = '5px 10px';
+                    btnAssign.style.fontSize = '12px';
+                    btnAssign.onclick = function(e) {
+                        e.stopPropagation();
+                        ouvrirModalAssignerNumero(patient.id);
+                    };
+                    actionsDiv.appendChild(btnAssign);
+                    
+                    // Bouton pour modifier
+                    const btnEdit = document.createElement('button');
+                    btnEdit.textContent = 'Modifier';
+                    btnEdit.style.backgroundColor = '#3b82f6';
+                    btnEdit.style.padding = '5px 10px';
+                    btnEdit.style.fontSize = '12px';
+                    btnEdit.onclick = function(e) {
+                        e.stopPropagation();
+                        ouvrirModalRenommerPatient(patient.id);
+                    };
+                    actionsDiv.appendChild(btnEdit);
+                    
+                    item.appendChild(actionsDiv);
+                    
+                    // Au clic sur l'item, on met en surbrillance la ligne du tableau correspondante
+                    item.addEventListener('click', () => {
+                        scrollToPatient(patient.id);
+                    });
+                    
+                    dropdown.appendChild(item);
+                });
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.innerHTML = '<div class="no-results">Aucun patient trouvé</div>';
+                dropdown.style.display = 'block';
+            }
+        }
+        
+        // Fonction pour faire défiler jusqu'à un patient et le mettre en surbrillance
+        function scrollToPatient(patientId) {
+            // Réinitialiser la surbrillance précédente si elle existe
+            if (patientHighlightedId) {
+                const previousRow = document.querySelector(`tr[data-patient-id="${patientHighlightedId}"]`);
+                if (previousRow) {
+                    previousRow.style.backgroundColor = '';
+                }
+            }
+            
+            // Trouver la ligne du tableau pour ce patient
+            const row = document.querySelector(`tr[data-patient-id="${patientId}"]`);
+            if (row) {
+                // Faire défiler jusqu'à cette ligne
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Mettre en surbrillance la ligne
+                row.style.backgroundColor = '#fef3c7'; // couleur de surbrillance jaune clair
+                patientHighlightedId = patientId;
+                
+                // Masquer le dropdown
+                document.getElementById('patientSearchDropdown').style.display = 'none';
+                
+                // Effacer la surbrillance après quelques secondes
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                    patientHighlightedId = null;
+                }, 3000);
+            }
+        }
+        
+        // Configuration de la recherche de patients
+        function initialiserRecherchePatients() {
+            const searchInput = document.getElementById('patientSearchInput');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(patientSearchTimeout);
+                    patientSearchTimeout = setTimeout(() => {
+                        rechercherPatients(this.value);
+                    }, 300);
+                });
+                
+                searchInput.addEventListener('focus', function() {
+                    if (this.value.length >= 2) {
+                        rechercherPatients(this.value);
+                    }
+                });
+                
+                // Fermer le dropdown quand on clique ailleurs
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('.patient-search-container')) {
+                        document.getElementById('patientSearchDropdown').style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Exposer les fonctions nécessaires globalement
+        window.rechercherPatients = rechercherPatients;
+        window.scrollToPatient = scrollToPatient;
+        window.initialiserRecherchePatients = initialiserRecherchePatients;
+
+    </script>
+</body>
+</html>

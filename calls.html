@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journal des Appels - Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .action-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .action-button:hover {
+            transform: scale(1.1);
+            background-color: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        tr.en-attente {
+            background-color: #fff3cd;
+        }
+        .attente-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background-color: #fd7e14;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .attente-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #fd7e14;
+        }
+        .attente-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .attente-title h3 {
+            margin: 0;
+            color: #fd7e14;
+        }
+        .attente-count {
+            background-color: #fd7e14;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .context-menu {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            width: 180px;
+        }
+        .context-menu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .context-menu li {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .context-menu li:last-child {
+            border-bottom: none;
+        }
+        .context-menu li:hover {
+            background-color: #f0f9ff;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            width: 50%;
+            max-width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            margin-right: 5px;
+        }
+        .tag-received {
+            background-color: #3498db;
+        }
+        .tag-outgoing {
+            background-color: #2ecc71;
+        }
+        .tag-other {
+            background-color: #9b59b6;
+        }
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .search-container input {
+            flex: 1;
+            padding: 10px;
+        }
+        .search-container button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 0 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            background-color: #f2f2f2;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 9999;
+            display: none;
+        }
+        .notification.success {
+            background-color: #2ecc71;
+        }
+        .notification.error {
+            background-color: #e74c3c;
+        }
+        .notification.info {
+            background-color: #3498db;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .pagination button.active {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .call-details {
+            cursor: pointer;
+        }
+        .call-details:hover {
+            text-decoration: underline;
+            color: #3498db;
+        }
+        .detail-modal {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .detail-content {
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        /* Style pour le bouton de migration */
+        .migration-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .migration-btn:hover {
+            background-color: #2980b9;
+        }
+        /* Styles pour la recherche de patients */
+        .patient-search-container {
+            position: relative;
+            width: 100%;
+        }
+        .patient-dropdown {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 4px 4px;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .patient-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+        .patient-item:hover {
+            background-color: #f0f9ff;
+        }
+        .patient-info {
+            font-size: 12px;
+            color: #666;
+        }
+        .no-results {
+            padding: 10px;
+            text-align: center;
+            color: #999;
+        }
+        /* Style pour la navigation entre pages */
+        .page-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .page-nav-button {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            text-align: center;
+        }
+        .page-nav-button.active {
+            background-color: #2c3e50;
+        }
+        .page-nav-button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-navigation">
+            <a href="index.html" class="page-nav-button">Accueil</a>
+            <a href="calls.html" class="page-nav-button active">Journal des Appels</a>
+            <a href="agenda.html" class="page-nav-button">Agenda de Rappel</a>
+        </div>
+        
+        <h1>Journal des Appels - Firebase</h1>
+        
+        <button onclick="migrerLocalStorageVersFirebase()" class="migration-btn">Migrer les données vers Firebase</button>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Rechercher par nom, numéro ou commentaire...">
+            <button onclick="rechercherAppels()">Rechercher</button>
+        </div>
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filtrerAppels('tous')">Tous</button>
+            <button class="filter-btn" onclick="filtrerAppels('recu')">Reçus</button>
+            <button class="filter-btn" onclick="filtrerAppels('passe')">Passés</button>
+            <button class="filter-btn" onclick="filtrerAppels('autre')">Autres</button>
+            <button class="filter-btn" onclick="filtrerAppels('attente')" style="background-color: #fd7e14; color: white;">En attente</button>
+        </div>
+        
+        <!-- Section pour les éléments en attente -->
+        <div id="attente-container" class="attente-container" style="display: none;">
+            <div class="attente-title">
+                <h3>Éléments en attente</h3>
+                <span class="attente-count" id="attente-count">0</span>
+            </div>
+            <table id="attenteTable" style="margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Nom/Contact</th>
+                        <th>Commentaire</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attenteTableBody">
+                    <!-- Les données en attente seront ajoutées ici dynamiquement -->
+                </tbody>
+            </table>
+        </div>
+        
+        <table id="appelsTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Type</th>
+                    <th>Nom/Contact</th>
+                    <th>Commentaire</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="appelsTableBody">
+                <!-- Les données seront ajoutées ici dynamiquement -->
+            </tbody>
+        </table>
+        
+        <div class="pagination" id="pagination">
+            <!-- Les boutons de pagination seront ajoutés ici dynamiquement -->
+        </div>
+    </div>
+    
+    <!-- Menu contextuel pour les actions sur les lignes -->
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li id="menuItemAttente">Mettre en attente</li>
+            <li id="menuItemTermine">Marquer comme terminé</li>
+            <li id="menuItemDetails">Voir les détails</li>
+            <li id="menuItemModifier">Modifier</li>
+            <li id="menuItemSupprimer">Supprimer</li>
+            <li id="menuItemEnvoyerAgenda">Envoyer à l'agenda</li>
+        </ul>
+    </div>
+    
+    <button class="action-button" id="addCallBtn">+</button>
+    
+    <div class="modal" id="callModal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('callModal')">&times;</span>
+            <h2>Ajouter un nouvel appel</h2>
+            <div class="btn-group">
+                <button class="btn" id="btnAppelRecu" onclick="selectionnerTypeAppel('recu')">Appel reçu</button>
+                <button class="btn" id="btnAppelPasse" onclick="selectionnerTypeAppel('passe')">Appel passé</button>
+                <button class="btn" id="btnAppelAutre" onclick="selectionnerTypeAppel('autre')">Autre</button>
+            </div>
+            <div id="formAppel" style="display: none;">
+                <div class="form-group" id="autreTypeGroup" style="display: none;">
+                    <label for="autreType">Précisez le type :</label>
+                    <input type="text" id="autreType" placeholder="Ex: SMS, Email, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="contactName">Nom du contact :</label>
+                    <div class="patient-search-container">
+                        <input type="text" id="contactName" placeholder="Nom et prénom" autocomplete="off">
+                        <div id="patientDropdown" class="patient-dropdown" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contactPhone">Numéro de téléphone (optionnel) :</label>
+                    <input type="tel" id="contactPhone" placeholder="Ex: 06 12 34 56 78">
+                </div>
+                <div class="form-group">
+                    <label for="callComment">Commentaire :</label>
+                    <textarea id="callComment" placeholder="Détails de l'appel..."></textarea>
+                </div>
+                <!-- Ajout des options de succès/échec pour les appels sortants -->
+                <div id="appelSortantOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Résultat de l'appel :</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="selectionnerResultatAppel('succes')">Succès (Décroché)</button>
+                            <button class="btn" onclick="selectionnerResultatAppel('echec')">Échec (Non décroché)</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- Options en cas d'échec -->
+                <div id="echecOptions" style="display: none;">
+                    <div class="form-group">
+                        <label>Actions effectuées :</label>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label><input type="checkbox" name="actionEchec" value="message"> Message vocal laissé</label>
+                            <label><input type="checkbox" name="actionEchec" value="mail"> E-mail envoyé</label>
+                            <label><input type="checkbox" name="actionEchec" value="sms"> SMS envoyé</label>
+                            <label><input type="checkbox" name="actionEchec" value="rien"> Aucune action</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="dateRelance">Date de relance :</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="datetime-local" id="dateRelance">
+                            <div class="counter-buttons">
+                                <button class="btn" onclick="ajusterDateRelance(-1)">-</button>
+                                <input type="number" id="joursRelance" value="1" min="1" style="width: 60px;">
+                                <button class="btn" onclick="ajusterDateRelance(1)">+</button>
+                                <span>jours</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="enregistrerAppel()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="detailModal">
+        <div class="modal-content detail-modal">
+            <span class="close" onclick="fermerModal('detailModal')">&times;</span>
+            <h2>Détails de l'appel</h2>
+            <div id="detailContent" class="detail-content">
+                <!-- Les détails seront ajoutés ici dynamiquement -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('editModal')">&times;</span>
+            <h2>Modifier l'appel</h2>
+            <div class="form-group">
+                <label for="editType">Type d'appel :</label>
+                <select id="editType">
+                    <option value="recu">Appel reçu</option>
+                    <option value="passe">Appel passé</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+            <div class="form-group" id="editAutreTypeGroup" style="display: none;">
+                <label for="editAutreType">Précisez le type :</label>
+                <input type="text" id="editAutreType" placeholder="Ex: SMS, Email, etc.">
+            </div>
+            <div class="form-group">
+                <label for="editContactName">Nom du contact :</label>
+                <input type="text" id="editContactName" placeholder="Nom et prénom">
+            </div>
+            <div class="form-group">
+                <label for="editContactPhone">Numéro de téléphone (optionnel) :</label>
+                <input type="tel" id="editContactPhone" placeholder="Ex: 06 12 34 56 78">
+            </div>
+            <div class="form-group">
+                <label for="editCallComment">Commentaire :</label>
+                <textarea id="editCallComment" placeholder="Détails de l'appel..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="mettreAJourAppel()">Mettre à jour</button>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <div class="modal" id="dateRelanceModal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('dateRelanceModal')">&times;</span>
+            <h2>Modifier la date de rappel</h2>
+            <div class="form-group">
+                <label for="editDateRelance">Nouvelle date de rappel :</label>
+                <input type="datetime-local" id="editDateRelance">
+                <div style="margin-top: 10px;">
+                    <button class="btn" onclick="ajusterDateRelanceEdit(-1)">-1 jour</button>
+                    <button class="btn" onclick="ajusterDateRelanceEdit(1)">+1 jour</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="sauvegarderNouvelleDate()">Sauvegarder</button>
+        </div>
+    </div>
+    
+    <!-- Nouveau modal pour la confirmation d'envoi à l'agenda -->
+    <div class="modal" id="envoyerAgendaModal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('envoyerAgendaModal')">&times;</span>
+            <h2>Envoyer à l'agenda de rappel</h2>
+            <div class="form-group">
+                <label for="agendaTitre">Titre du rendez-vous :</label>
+                <input type="text" id="agendaTitre" placeholder="Titre du rendez-vous">
+            </div>
+            <div class="form-group">
+                <label for="agendaDate">Date et heure du rappel :</label>
+                <input type="datetime-local" id="agendaDate">
+                <div style="margin-top: 10px;">
+                    <button class="btn" onclick="ajusterAgendaDate(-1)">-1 jour</button>
+                    <button class="btn" onclick="ajusterAgendaDate(1)">+1 jour</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="confirmerEnvoiAgenda()">Confirmer l'envoi</button>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDoc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqLgCObybog6fGl9FWe2i9uGu10C-pfIg",
+            authDomain: "ouioui-9cc8f.firebaseapp.com",
+            projectId: "ouioui-9cc8f",
+            storageBucket: "ouioui-9cc8f.appspot.com",
+            messagingSenderId: "661460129930",
+            appId: "1:661460129930:web:b46c5c2529c5585f557573"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Variables globales
+        let appels = []; // Tableau pour stocker les appels
+        window.typeAppelSelectionne = null; // Type d'appel sélectionné - Changed to window scope
+        let appelsParPage = 10; // Nombre d'appels par page
+        let pageActuelle = 1; // Page actuelle
+        let filtreActif = 'tous'; // Filtre actif
+        let appelSelectionne = null; // ID de l'appel sélectionné pour l'édition
+        window.ligneContextMenu = null; // Make ligneContextMenu globally accessible
+        let appelDateRelanceEnCours = null;
+        let patients = []; // Nouvelle variable pour stocker les patients
+        let patientSearchTimeout;
+        let patientSelectionneId = null; // Nouvelle variable pour stocker l'ID du patient sélectionné
+
+        // Clé de stockage dans localStorage (pour la migration)
+        const CALLS_STORAGE_KEY = 'journal_appels_data_v1';
+
+        // ----- Fonctions de gestion des appels -----
+
+        // Charger les appels depuis Firebase
+        function chargerAppels() {
+            // Écouter les changements dans la collection "appels"
+            onSnapshot(collection(db, "appels"), (snapshot) => {
+                appels = [];
+                snapshot.forEach((doc) => {
+                    appels.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                console.log(`${appels.length} appels chargés depuis Firebase`);
+                rafraichirTableauAppels();
+            });
+        }
+
+        // Ajouter un nouvel appel
+        async function ajouterAppel(type, autreType, nom, telephone, commentaire, resultatAppel = null, actionsEchec = [], dateRelance = null) {
+            // Créer un nouvel objet appel
+            const nouvelAppel = {
+                date: new Date().toLocaleDateString(),
+                heure: new Date().toLocaleTimeString(),
+                timestamp: Date.now(),
+                type: type,
+                autreType: type === 'autre' ? autreType : '',
+                nom: nom,
+                telephone: telephone,
+                commentaire: commentaire,
+                enAttente: dateRelance ? true : false,
+                resultatAppel: resultatAppel,
+                actionsEchec: actionsEchec,
+                dateRelance: dateRelance
+            };
+
+            try {
+                // Ajouter à Firebase
+                await addDoc(collection(db, "appels"), nouvelAppel);
+                afficherNotification("Appel enregistré avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de l'appel:", error);
+                afficherNotification("Erreur lors de l'enregistrement", "error");
+            }
+        }
+
+        // Supprimer un appel
+        async function supprimerAppel(id) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet appel ?')) {
+                try {
+                    await deleteDoc(doc(db, "appels", id));
+                    afficherNotification("Appel supprimé avec succès", "success");
+                } catch (error) {
+                    console.error("Erreur lors de la suppression:", error);
+                    afficherNotification("Erreur lors de la suppression", "error");
+                }
+            }
+        }
+
+        // Modifier un appel
+        function modifierAppel(id) {
+            // Stocker l'ID de l'appel sélectionné
+            appelSelectionne = id;
+
+            // Trouver l'appel
+            const appel = appels.find(a => a.id === id);
+            if (appel) {
+                // Remplir le formulaire de modification
+                document.getElementById('editType').value = appel.type;
+                document.getElementById('editAutreType').value = appel.autreType || '';
+                document.getElementById('editContactName').value = appel.nom || '';
+                document.getElementById('editContactPhone').value = appel.telephone || '';
+                document.getElementById('editCallComment').value = appel.commentaire || '';
+
+                // Afficher ou masquer le champ "Autre type"
+                document.getElementById('editAutreTypeGroup').style.display = 
+                    appel.type === 'autre' ? 'block' : 'none';
+
+                // Afficher le modal
+                document.getElementById('editModal').style.display = 'flex';
+
+                // Ajouter un écouteur d'événement pour le changement de type
+                document.getElementById('editType').addEventListener('change', function() {
+                    document.getElementById('editAutreTypeGroup').style.display = 
+                        this.value === 'autre' ? 'block' : 'none';
+                });
+            }
+        }
+
+        // Mettre à jour un appel
+        async function mettreAJourAppel() {
+            if (!appelSelectionne) {
+                fermerModal('editModal');
+                return;
+            }
+
+            try {
+                // D'abord récupérer l'appel existant pour préserver tous les champs
+                const appelRef = doc(db, "appels", appelSelectionne);
+                const appelDoc = await getDoc(appelRef);
+                if (!appelDoc.exists()) {
+                    throw new Error("Appel non trouvé");
+                }
+
+                // Récupérer les valeurs du formulaire
+                const type = document.getElementById('editType').value;
+                const autreType = document.getElementById('editAutreType').value.trim();
+                const nom = document.getElementById('editContactName').value.trim();
+                const telephone = document.getElementById('editContactPhone').value.trim();
+                const commentaire = document.getElementById('editCallComment').value.trim();
+
+                // Validation
+                if (type === 'autre' && !autreType) {
+                    afficherNotification("Veuillez préciser le type d'appel", "error");
+                    return;
+                }
+
+                if (!nom) {
+                    afficherNotification("Le nom du contact est requis", "error");
+                    return;
+                }
+
+                // Mettre à jour dans Firebase en préservant les champs existants
+                await updateDoc(appelRef, {
+                    type: type,
+                    autreType: type === 'autre' ? autreType : '',
+                    nom: nom,
+                    telephone: telephone,
+                    commentaire: commentaire,
+                    // Conserver ces champs seulement s'ils existent
+                    enAttente: appelDoc.data().enAttente || false,
+                    resultatAppel: appelDoc.data().resultatAppel || null,
+                    actionsEchec: appelDoc.data().actionsEchec || [],
+                    dateRelance: appelDoc.data().dateRelance || null,
+                    patientId: appelDoc.data().patientId || null
+                });
+
+                fermerModal('editModal');
+                afficherNotification("Appel mis à jour avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour:", error);
+                afficherNotification("Erreur lors de la mise à jour", "error");
+            }
+        }
+
+        // Voir les détails d'un appel
+        function voirDetailsAppel(id) {
+            // Trouver l'appel
+            const appel = appels.find(a => a.id === id);
+            if (appel) {
+                // Remplir le contenu du modal
+                let typeAffiche = '';
+                if (appel.type === 'recu') {
+                    typeAffiche = 'Appel reçu';
+                } else if (appel.type === 'passe') {
+                    typeAffiche = 'Appel passé';
+                } else if (appel.type === 'autre') {
+                    typeAffiche = `Autre (${appel.autreType})`;
+                }
+
+                document.getElementById('detailContent').innerHTML = `
+                    <p><strong>Date:</strong> ${appel.date}</p>
+                    <p><strong>Heure:</strong> ${appel.heure}</p>
+                    <p><strong>Type:</strong> ${typeAffiche}</p>
+                    <p><strong>Contact:</strong> ${appel.nom}</p>
+                    ${appel.telephone ? `<p><strong>Téléphone:</strong> ${appel.telephone}</p>` : ''}
+                    <p><strong>Commentaire:</strong></p>
+                    <div style="background-color: #f2f2f2; padding: 10px; border-radius: 4px;">
+                        ${appel.commentaire.replace(/\n/g, '<br>')}
+                    </div>
+                `;
+
+                // Afficher le modal
+                document.getElementById('detailModal').style.display = 'flex';
+            }
+        }
+
+        // Rechercher des appels
+        async function rechercherAppels() {
+            const recherche = document.getElementById('searchInput').value.toLowerCase();
+
+            // Si la recherche est vide, afficher tous les appels
+            if (!recherche) {
+                filtrerAppels(filtreActif);
+                return;
+            }
+
+            try {
+                // Récupérer tous les appels (ou implémentez des requêtes plus sophistiquées si nécessaire)
+                const snapshot = await getDocs(collection(db, "appels"));
+                let appelsFiltres = [];
+                snapshot.forEach(doc => {
+                    const appel = {
+                        id: doc.id,
+                        ...doc.data()
+                    };
+
+                    // Filtrage côté client
+                    if ((appel.nom && appel.nom.toLowerCase().includes(recherche)) ||
+                        (appel.telephone && appel.telephone.toLowerCase().includes(recherche)) ||
+                        (appel.commentaire && appel.commentaire.toLowerCase().includes(recherche))) {
+                        appelsFiltres.push(appel);
+                    }
+                });
+
+                // Afficher les résultats
+                afficherAppelsFiltres(appelsFiltres);
+            } catch (error) {
+                console.error("Erreur lors de la recherche:", error);
+                afficherNotification("Erreur lors de la recherche", "error");
+            }
+        }
+
+        // Filtrer les appels par type
+        function filtrerAppels(filtre) {
+            // Mettre à jour le filtre actif
+            filtreActif = filtre;
+
+            // Mettre à jour l'apparence des boutons de filtre
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.filter-btn[onclick="filtrerAppels('${filtre}')"]`).classList.add('active');
+
+            // Filtrer les appels en fonction du type
+            let appelsFiltres = [];
+            if (filtre === 'tous') {
+                appelsFiltres = [...appels];
+            } else if (filtre === 'attente') {
+                appelsFiltres = appels.filter(appel => appel.enAttente);
+            } else {
+                appelsFiltres = appels.filter(appel => appel.type === filtre);
+            }
+
+            // Mise à jour de l'affichage avec les appels filtrés
+            afficherAppelsFiltres(appelsFiltres);
+        }
+
+        // Afficher les appels filtrés
+        function afficherAppelsFiltres(appelsFiltres) {
+            // Calculer le nombre de pages
+            const nombrePages = Math.ceil(appelsFiltres.length / appelsParPage);
+
+            // Vérifier que la page actuelle est valide
+            if (pageActuelle > nombrePages) {
+                pageActuelle = Math.max(1, nombrePages);
+            }
+
+            // Calculer les indices de début et de fin
+            const debut = (pageActuelle - 1) * appelsParPage;
+            const fin = Math.min(debut + appelsParPage, appelsFiltres.length);
+
+            // Récupérer les appels de la page actuelle
+            const appelsPage = appelsFiltres.slice(debut, fin);
+
+            // Vider le tableau
+            const tbody = document.getElementById('appelsTableBody');
+            tbody.innerHTML = '';
+
+            // Mettre à jour le conteneur des éléments en attente
+            mettreAJourTableauAttente();
+
+            // Ajouter les appels à la table
+            if (appelsPage.length === 0) {
+                // Aucun appel à afficher
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="7" style="text-align: center;">Aucun appel à afficher</td>`;
+                tbody.appendChild(tr);
+            } else {
+                appelsPage.forEach(appel => {
+                    const tr = document.createElement('tr');
+                    tr.dataset.id = appel.id;
+
+                    // Ajouter la classe correspondant au type d'appel
+                    tr.classList.add(`appel-${appel.type}`);
+
+                    // Ajouter la classe "en-attente" si nécessaire
+                    if (appel.enAttente) {
+                        tr.classList.add('en-attente');
+                    }
+
+                    // Déterminer le tag HTML pour le type d'appel
+                    let typeTag = '';
+                    if (appel.type === 'recu') {
+                        typeTag = `<span class="tag tag-received">Reçu</span>`;
+                    } else if (appel.type === 'passe') {
+                        typeTag = `<span class="tag tag-outgoing">Passé</span>`;
+                    } else if (appel.type === 'autre') {
+                        typeTag = `<span class="tag tag-other">${appel.autreType || 'Autre'}</span>`;
+                    }
+
+                    // Limiter la longueur du commentaire à afficher
+                    const commentaireCourt = appel.commentaire.length > 50 
+                        ? appel.commentaire.substring(0, 50) + '...' 
+                        : appel.commentaire;
+
+                    // Déterminer le statut à afficher
+                    const statut = appel.enAttente ? 
+                        `<span class="attente-badge">En attente</span>` : 
+                        `<span style="color: #2ecc71;">Terminé</span>`;
+
+                    tr.innerHTML = `
+                        <td>${appel.date}</td>
+                        <td>${appel.heure}</td>
+                        <td>${typeTag}</td>
+                        <td>${appel.nom}${appel.telephone ? ` (${appel.telephone})` : ''}</td>
+                        <td class="call-details" onclick="voirDetailsAppel('${appel.id}')">${commentaireCourt}</td>
+                        <td>${statut}</td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding: 5px 10px;" onclick="modifierAppel('${appel.id}')">Modifier</button>
+                            <button class="btn" style="padding: 5px 10px; background-color: #e74c3c; color: white;" onclick="supprimerAppel('${appel.id}')">Supprimer</button>
+                        </td>
+                    `;
+
+                    // Ajouter l'écouteur pour le menu contextuel
+                    tr.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        afficherContextMenu(e, appel.id, tr);
+                    });
+
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Mettre à jour la pagination
+            mettreAJourPagination(nombrePages);
+        }
+
+        // Mettre à jour la pagination
+        function mettreAJourPagination(nombrePages) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Si il n'y a qu'une page ou moins, ne pas afficher la pagination
+            if (nombrePages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+
+            // Bouton précédent
+            const btnPrecedent = document.createElement('button');
+            btnPrecedent.textContent = '«';
+            btnPrecedent.disabled = pageActuelle === 1;
+            btnPrecedent.addEventListener('click', () => {
+                if (pageActuelle > 1) {
+                    pageActuelle--;
+                    filtrerAppels(filtreActif);
+                }
+            });
+            pagination.appendChild(btnPrecedent);
+
+            // Afficher les numéros de page (max 5 pages visibles)
+            const debutPages = Math.max(1, pageActuelle - 2);
+            const finPages = Math.min(nombrePages, debutPages + 4);
+            for (let i = debutPages; i <= finPages; i++) {
+                const btnPage = document.createElement('button');
+                btnPage.textContent = i;
+                btnPage.classList.toggle('active', i === pageActuelle);
+                btnPage.addEventListener('click', () => {
+                    pageActuelle = i;
+                    filtrerAppels(filtreActif);
+                });
+                pagination.appendChild(btnPage);
+            }
+
+            // Bouton suivant
+            const btnSuivant = document.createElement('button');
+            btnSuivant.textContent = '»';
+            btnSuivant.disabled = pageActuelle === nombrePages;
+            btnSuivant.addEventListener('click', () => {
+                if (pageActuelle < nombrePages) {
+                    pageActuelle++;
+                    filtrerAppels(filtreActif);
+                }
+            });
+            pagination.appendChild(btnSuivant);
+        }
+
+        // ----- Fonctions d'interface utilisateur -----
+
+        // Sélectionner le type d'appel
+        function selectionnerTypeAppel(type) {
+            window.typeAppelSelectionne = type; // Use window scope
+
+            // Mettre à jour l'apparence des boutons
+            document.getElementById('btnAppelRecu').classList.toggle('btn-primary', type === 'recu');
+            document.getElementById('btnAppelPasse').classList.toggle('btn-primary', type === 'passe');
+            document.getElementById('btnAppelAutre').classList.toggle('btn-primary', type === 'autre');
+
+            // Afficher le formulaire
+            document.getElementById('formAppel').style.display = 'block';
+
+            // Afficher ou masquer le champ "Autre type"
+            document.getElementById('autreTypeGroup').style.display = type === 'autre' ? 'block' : 'none';
+
+            // Afficher les options de succès/échec uniquement pour les appels sortants
+            document.getElementById('appelSortantOptions').style.display = type === 'passe' ? 'block' : 'none';
+            document.getElementById('echecOptions').style.display = 'none';
+
+            // Focus sur le champ "Nom du contact"
+            document.getElementById('contactName').focus();
+        }
+
+        // Nouvelle fonction pour gérer le résultat de l'appel
+        function selectionnerResultatAppel(resultat) {
+            // Mettre à jour l'apparence des boutons
+            const btns = document.getElementById('appelSortantOptions').getElementsByTagName('button');
+            for (let btn of btns) {
+                btn.classList.remove('btn-primary');
+            }
+            event.target.classList.add('btn-primary');
+
+            // Afficher/masquer les options d'échec
+            document.getElementById('echecOptions').style.display = resultat === 'echec' ? 'block' : 'none';
+
+            // Si échec, initialiser la date de relance par défaut
+            if (resultat === 'echec') {
+                const dateRelance = new Date();
+                dateRelance.setDate(dateRelance.getDate() + 1);
+                document.getElementById('dateRelance').value = dateRelance.toISOString().slice(0, 16);
+            }
+        }
+
+        // Fonction pour ajuster la date de relance
+        function ajusterDateRelance(increment) {
+            const joursInput = document.getElementById('joursRelance');
+            const dateRelanceInput = document.getElementById('dateRelance');
+            let jours = parseInt(joursInput.value) + increment;
+            if (jours < 1) jours = 1;
+            joursInput.value = jours;
+            const dateRelance = new Date();
+            dateRelance.setDate(dateRelance.getDate() + jours);
+            dateRelanceInput.value = dateRelance.toISOString().slice(0, 16);
+        }
+
+        // Enregistrer un nouvel appel
+        async function enregistrerAppel() {
+            // Vérifier qu'un type d'appel a été sélectionné
+            if (!window.typeAppelSelectionne) { // Check window scope
+                afficherNotification("Veuillez sélectionner un type d'appel", "error");
+                return;
+            }
+
+            // Récupérer les valeurs du formulaire
+            const autreType = document.getElementById('autreType').value.trim();
+            const nom = document.getElementById('contactName').value.trim();
+            const telephone = document.getElementById('contactPhone').value.trim();
+            const commentaire = document.getElementById('callComment').value.trim();
+
+            // Validation
+            if (window.typeAppelSelectionne === 'autre' && !autreType) { // Use window scope
+                afficherNotification("Veuillez préciser le type d'appel", "error");
+                return;
+            }
+
+            if (!nom) {
+                afficherNotification("Le nom du contact est requis", "error");
+                return;
+            }
+
+            // Pour les appels sortants, récupérer les informations supplémentaires
+            let resultatAppel = null;
+            let actionsEchec = [];
+            let dateRelance = null;
+
+            if (window.typeAppelSelectionne === 'passe') { // Use window scope
+                const btnsResultat = document.getElementById('appelSortantOptions').getElementsByTagName('button');
+                for (let btn of btnsResultat) {
+                    if (btn.classList.contains('btn-primary')) {
+                        resultatAppel = btn.textContent === 'Succès (Décroché)' ? 'succes' : 'echec';
+                    }
+                }
+
+                if (resultatAppel === 'echec') {
+                    const checkboxes = document.getElementsByName('actionEchec');
+                    checkboxes.forEach(cb => {
+                        if (cb.checked) actionsEchec.push(cb.value);
+                    });
+                    dateRelance = document.getElementById('dateRelance').value;
+                }
+            }
+
+            // Ajouter l'appel
+            try {
+                // Créer un nouvel objet appel
+                const nouvelAppel = {
+                    date: new Date().toLocaleDateString(),
+                    heure: new Date().toLocaleTimeString(),
+                    timestamp: Date.now(),
+                    type: window.typeAppelSelectionne,
+                    autreType: window.typeAppelSelectionne === 'autre' ? autreType : '',
+                    nom: nom,
+                    telephone: telephone,
+                    commentaire: commentaire,
+                    enAttente: dateRelance ? true : false,
+                    resultatAppel: resultatAppel,
+                    actionsEchec: actionsEchec,
+                    dateRelance: dateRelance,
+                    patientId: patientSelectionneId // Ajouter l'ID du patient si disponible
+                };
+
+                // Ajouter à Firebase (collection appels)
+                await addDoc(collection(db, "appels"), nouvelAppel);
+
+                // Si un patient a été sélectionné, ajouter le commentaire à ce patient
+                if (patientSelectionneId && commentaire) {
+                    await ajouterCommentairePatient(patientSelectionneId, commentaire);
+                    console.log(`Commentaire ajouté au patient ID: ${patientSelectionneId}`);
+                }
+
+                afficherNotification("Appel enregistré avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de l'appel:", error);
+                afficherNotification("Erreur lors de l'enregistrement", "error");
+            }
+
+            // Fermer le modal
+            fermerModal('callModal');
+
+            // Réinitialiser le formulaire
+            resetFormAppel();
+        }
+
+        // Réinitialiser le formulaire d'ajout d'appel
+        function resetFormAppel() {
+            window.typeAppelSelectionne = null; // Use window scope
+            document.getElementById('btnAppelRecu').classList.remove('btn-primary');
+            document.getElementById('btnAppelPasse').classList.remove('btn-primary');
+            document.getElementById('btnAppelAutre').classList.remove('btn-primary');
+            document.getElementById('formAppel').style.display = 'none';
+            document.getElementById('autreTypeGroup').style.display = 'none';
+            document.getElementById('autreType').value = '';
+            document.getElementById('contactName').value = '';
+            document.getElementById('contactPhone').value = '';
+            document.getElementById('callComment').value = '';
+            // Réinitialiser l'ID du patient sélectionné
+            patientSelectionneId = null;
+        }
+
+        // Fermer un modal
+        function fermerModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Si c'est le modal d'ajout d'appel, réinitialiser le formulaire
+            if (modalId === 'callModal') {
+                resetFormAppel();
+            }
+            // Si c'est le modal de modification d'appel, réinitialiser l'appel sélectionné
+            if (modalId === 'editModal') {
+                appelSelectionne = null;
+            }
+        }
+
+        // Afficher une notification
+        function afficherNotification(message, type = "info") {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = "notification " + type;
+            notification.style.display = "block";
+
+            // Masquer la notification après 3 secondes
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 3000);
+        }
+
+        // Mettre à jour l'affichage du tableau des appels
+        function rafraichirTableauAppels() {
+            // Réinitialiser la pagination à la première page
+            pageActuelle = 1;
+            // Appliquer le filtre actif
+            filtrerAppels(filtreActif);
+        }
+
+        // ----- Fonctions pour gérer les appels en attente -----
+
+        // Afficher le menu contextuel
+        function afficherContextMenu(e, appelId, tr) {
+            e.preventDefault();
+            window.ligneContextMenu = appelId; // Use window.ligneContextMenu instead of local variable
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = `${e.pageX}px`;
+            menu.style.top = `${e.pageY}px`;
+
+            // Trouver l'appel
+            const appel = appels.find(a => a.id === appelId);
+
+            // Adapter les options du menu en fonction de l'état de l'appel
+            if (appel) {
+                // Option pour mettre en attente / terminer
+                document.getElementById('menuItemAttente').style.display = appel.enAttente ? 'none' : 'block';
+                document.getElementById('menuItemTermine').style.display = appel.enAttente ? 'block' : 'none';
+            }
+
+            // Fermer le menu au clic n'importe où
+            document.addEventListener('click', fermerContextMenu);
+        }
+
+        // Fermer le menu contextuel
+        function fermerContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+            document.removeEventListener('click', fermerContextMenu);
+        }
+
+        // Mettre un appel en attente
+        async function mettreEnAttente(appelId) {
+            try {
+                await updateDoc(doc(db, "appels", appelId), {
+                    enAttente: true
+                });
+                afficherNotification("Appel mis en attente", "info");
+            } catch (error) {
+                console.error("Erreur lors de la mise en attente:", error);
+                afficherNotification("Erreur lors de la mise en attente", "error");
+            }
+        }
+
+        // Marquer un appel comme terminé
+        async function marquerCommeTermine(appelId) {
+            try {
+                await updateDoc(doc(db, "appels", appelId), {
+                    enAttente: false,
+                    dateFin: new Date().toISOString(),
+                    commentaire: appels.find(a => a.id === appelId).commentaire + `\n\n[${new Date().toLocaleString()}] Marqué comme terminé`
+                });
+                afficherNotification("Appel marqué comme terminé", "success");
+            } catch (error) {
+                console.error("Erreur lors du marquage:", error);
+                afficherNotification("Erreur lors du marquage", "error");
+            }
+        }
+
+        // Ajouter cette fonction d'aide avant mettreAJourTableauAttente
+        function formaterActionsEchec(actionsEchec) {
+            if (!actionsEchec || actionsEchec.length === 0) return '';
+            const actions = {
+                'message': 'Message vocal',
+                'mail': 'E-mail',
+                'sms': 'SMS',
+                'rien': 'Aucune action'
+            };
+            return actionsEchec.map(action => `<span class="tag" style="background-color: #95a5a6;">${actions[action]}</span>`).join(' ');
+        }
+
+        // Remplacer la fonction mettreAJourTableauAttente existante
+        function mettreAJourTableauAttente() {
+            const appelsEnAttente = appels.filter(appel => appel.enAttente);
+            const nombreEnAttente = appelsEnAttente.length;
+            
+            document.getElementById('attente-count').textContent = nombreEnAttente;
+            document.getElementById('attente-container').style.display = nombreEnAttente > 0 ? 'block' : 'none';
+            
+            if (filtreActif === 'attente') {
+                document.getElementById('attente-container').style.display = 'none';
+                return;
+            }
+            
+            const tbody = document.getElementById('attenteTableBody');
+            tbody.innerHTML = '';
+            
+            appelsEnAttente.forEach(appel => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = appel.id; // Store the ID in data attribute
+                
+                let typeTag = '';
+                if (appel.type === 'recu') {
+                    typeTag = `<span class="tag tag-received">Reçu</span>`;
+                } else if (appel.type === 'passe') {
+                    typeTag = `<span class="tag tag-outgoing">Passé</span>`;
+                } else if (appel.type === 'autre') {
+                    typeTag = `<span class="tag tag-other">${appel.autreType || 'Autre'}</span>`;
+                }
+                
+                let statutAppel = '';
+                if (appel.resultatAppel === 'echec') {
+                    statutAppel = '<span class="tag" style="background-color: #e74c3c;">Appel manqué</span>';
+                }
+                
+                // Afficher la date de relance si elle existe
+                let dateRelanceAffichage = '';
+                if (appel.dateRelance) {
+                    const tempsRestant = calculerTempsRestant(appel.dateRelance);
+                    const dateRelance = new Date(appel.dateRelance);
+                    dateRelanceAffichage = `
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <span class="tag" style="background-color: #f39c12;">
+                                Relance: ${dateRelance.toLocaleDateString()} ${dateRelance.toLocaleTimeString()}
+                                (${tempsRestant})
+                            </span>
+                            <button class="btn" style="padding: 2px 5px; font-size: 12px;" 
+                                    onclick="ouvrirModalDateRelance('${appel.id}'); event.stopPropagation();">
+                                ✏️
+                            </button>
+                        </div>`;
+                }
+                
+                // Afficher les actions effectuées
+                const actionsEffectuees = formaterActionsEchec(appel.actionsEchec);
+                
+                tr.innerHTML = `
+                    <td>${appel.date}<br>${appel.heure}</td>
+                    <td>
+                        ${typeTag}
+                        ${statutAppel}
+                        ${dateRelanceAffichage}
+                        ${actionsEffectuees ? `<br>${actionsEffectuees}` : ''}
+                    </td>
+                    <td>${appel.nom}${appel.telephone ? `<br>${appel.telephone}` : ''}</td>
+                    <td>
+                        <div class="call-details" onclick="voirDetailsAppel('${appel.id}')">
+                            ${appel.commentaire}
+                            <button class="btn btn-secondary" style="padding: 2px 5px; margin-left: 5px; font-size: 12px;" onclick="modifierAppel('${appel.id}'); event.stopPropagation();">Éditer</button>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-success" style="padding: 5px 10px;" onclick="marquerCommeTermine('${appel.id}')">Terminé</button>
+                        <button class="btn btn-secondary" style="padding: 5px 10px;" onclick="voirDetailsAppel('${appel.id}')">Détails</button>
+                        <button class="btn" style="padding: 5px 10px; background-color: #3498db; color: white;" onclick="envoyerVersAgenda('${appel.id}')">Agenda</button>
+                    </td>
+                `;
+                
+                // Ajouter l'écouteur pour le menu contextuel
+                tr.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    afficherContextMenu(e, appel.id, tr);
+                });
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function ajusterDateRelanceEdit(jours) {
+            const input = document.getElementById('editDateRelance');
+            const date = new Date(input.value || Date.now());
+            date.setDate(date.getDate() + jours);
+            input.value = date.toISOString().slice(0, 16);
+        }
+
+        function ouvrirModalDateRelance(appelId) {
+            appelDateRelanceEnCours = appelId;
+            const appel = appels.find(a => a.id === appelId);
+            const modal = document.getElementById('dateRelanceModal');
+            const input = document.getElementById('editDateRelance');
+            if (appel && appel.dateRelance) {
+                input.value = new Date(appel.dateRelance).toISOString().slice(0, 16);
+            } else {
+                const date = new Date();
+                date.setDate(date.getDate() + 1);
+                input.value = date.toISOString().slice(0, 16);
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        async function sauvegarderNouvelleDate() {
+            if (!appelDateRelanceEnCours) return;
+            
+            try {
+                const nouvelleDate = document.getElementById('editDateRelance').value;
+                await updateDoc(doc(db, "appels", appelDateRelanceEnCours), {
+                    dateRelance: nouvelleDate
+                });
+                fermerModal('dateRelanceModal');
+                afficherNotification("Date de rappel mise à jour", "success");
+            } catch (error) {
+                console.error("Erreur lors de la mise à jour de la date:", error);
+                afficherNotification("Erreur lors de la mise à jour", "error");
+            }
+        }
+
+        function calculerTempsRestant(dateRelance) {
+            const maintenant = new Date();
+            const dateRappel = new Date(dateRelance);
+            const diff = dateRappel - maintenant;
+            if (diff < 0) return '<span style="color: #e74c3c">Dépassé</span>';
+            const jours = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const heures = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            if (jours > 0) return `${jours}j ${heures}h`;
+            if (heures > 0) return `${heures}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
+        // Fonction pour migrer les données de localStorage vers Firebase
+        async function migrerLocalStorageVersFirebase() {
+            try {
+                // Récupérer les données du localStorage
+                const appelsStr = localStorage.getItem(CALLS_STORAGE_KEY);
+                if (!appelsStr) {
+                    console.log("Aucune donnée trouvée dans localStorage");
+                    return;
+                }
+
+                const appelsArray = JSON.parse(appelsStr);
+                console.log(`Migration de ${appelsArray.length} appels vers Firebase...`);
+
+                // Ajouter chaque appel à Firebase
+                let compteur = 0;
+                for (const appel of appelsArray) {
+                    // Supprimer l'ID local pour obtenir un nouvel ID Firebase
+                    const { id, ...appelSansId } = appel;
+                    await addDoc(collection(db, "appels"), appelSansId);
+                    compteur++;
+                }
+
+                console.log(`Migration terminée: ${compteur} appels migrés vers Firebase`);
+                afficherNotification(`${compteur} appels migrés vers Firebase`, "success");
+
+                // Optionnel: supprimer les données du localStorage après la migration
+                if (confirm("Les données ont été migrées vers Firebase. Voulez-vous supprimer les données locales?")) {
+                    localStorage.removeItem(CALLS_STORAGE_KEY);
+                    console.log("Données locales supprimées");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la migration:", error);
+                afficherNotification("Erreur lors de la migration", "error");
+            }
+        }
+
+        // ----- Fonctions de gestion des patients -----
+
+        // Charger les patients depuis Firebase
+        function chargerPatients() {
+            // Écouter les changements dans la collection "patients"
+            onSnapshot(collection(db, "patients"), (snapshot) => {
+                patients = [];
+                snapshot.forEach((doc) => {
+                    patients.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                console.log(`${patients.length} patients chargés depuis Firebase`);
+            });
+        }
+
+        // Fonction pour rechercher des patients
+        function rechercherPatients(terme) {
+            const dropdown = document.getElementById('patientDropdown');
+            dropdown.innerHTML = '';
+            
+            if (!terme || terme.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            const termeRecherche = terme.toLowerCase();
+            const correspondances = patients.filter(patient => {
+                const nomComplet = `${patient.nom || ''} ${patient.prenom || ''}`.toLowerCase();
+                return nomComplet.includes(termeRecherche);
+            });
+            
+            if (correspondances.length > 0) {
+                correspondances.slice(0, 10).forEach(patient => {
+                    const item = document.createElement('div');
+                    item.className = 'patient-item';
+                    item.innerHTML = `
+                        <div><strong>${patient.nom || ''} ${patient.prenom || ''}</strong></div>
+                        ${patient.telephone ? `<div class="patient-info">Tel: ${patient.telephone}</div>` : ''}
+                    `;
+                    item.addEventListener('click', () => selectionnerPatient(patient));
+                    dropdown.appendChild(item);
+                });
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.innerHTML = '<div class="no-results">Aucun patient trouvé</div>';
+                dropdown.style.display = 'block';
+            }
+        }
+
+        // Fonction pour sélectionner un patient
+        function selectionnerPatient(patient) {
+            document.getElementById('contactName').value = `${patient.nom || ''} ${patient.prenom || ''}`.trim();
+            if (patient.telephone) {
+                document.getElementById('contactPhone').value = patient.telephone;
+            }
+            document.getElementById('patientDropdown').style.display = 'none';
+            
+            // Stocker l'ID du patient sélectionné
+            patientSelectionneId = patient.id;
+            console.log(`Patient sélectionné: ${patient.nom} ${patient.prenom} (ID: ${patient.id})`);
+        }
+
+        // Configuration de la recherche de patients
+        function initialiserRecherchePatients() {
+            const champNom = document.getElementById('contactName');
+            
+            champNom.addEventListener('input', function() {
+                clearTimeout(patientSearchTimeout);
+                patientSearchTimeout = setTimeout(() => {
+                    rechercherPatients(this.value);
+                }, 300);
+            });
+            
+            champNom.addEventListener('focus', function() {
+                if (this.value.length >= 2) {
+                    rechercherPatients(this.value);
+                }
+            });
+            
+            // Fermer le dropdown quand on clique ailleurs
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.patient-search-container')) {
+                    document.getElementById('patientDropdown').style.display = 'none';
+                }
+            });
+        }
+
+        // Nouvelle fonction pour ajouter un commentaire à un patient
+        async function ajouterCommentairePatient(patientId, texteCommentaire) {
+            try {
+                // Récupérer le document du patient
+                const patientRef = doc(db, "patients", patientId);
+                const patientDoc = await getDoc(patientRef);
+                
+                if (patientDoc.exists()) {
+                    const patientData = patientDoc.data();
+                    // Créer un nouveau commentaire au format attendu par STK
+                    const nouveauCommentaire = {
+                        id: Date.now().toString(),
+                        texte: `[Journal des appels] ${texteCommentaire}`,
+                        date: new Date().toLocaleString(),
+                        lu: false
+                    };
+                    // Ajouter le commentaire au tableau existant ou créer un nouveau tableau
+                    let commentaires = patientData.commentaires || [];
+                    commentaires.unshift(nouveauCommentaire); // Ajouter au début
+                    
+                    // Mettre à jour le document du patient
+                    await updateDoc(patientRef, {
+                        commentaires: commentaires
+                    });
+                    
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error("Erreur lors de l'ajout du commentaire au patient:", error);
+                return false;
+            }
+        }
+
+        // ----- Initialisation -----
+
+        // Initialiser l'application
+        function initialiserApp() {
+            // Charger les appels depuis Firebase - ceci établit l'écoute en temps réel
+            chargerAppels();
+            
+            // Charger les patients depuis Firebase
+            chargerPatients();
+            
+            // Initialiser la recherche de patients
+            initialiserRecherchePatients();
+            
+            // Configurer le bouton d'ajout d'appel
+            document.getElementById('addCallBtn').addEventListener('click', function() {
+                document.getElementById('callModal').style.display = 'flex';
+            });
+            
+            // Configurer la touche Echap pour fermer les modals
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.style.display = 'none';
+                    });
+                    resetFormAppel();
+                    appelSelectionne = null;
+                }
+            });
+            
+            // Configurer le champ de recherche
+            document.getElementById('searchInput').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    rechercherAppels();
+                }
+            });
+            
+            // Mettre à jour le tableau toutes les minutes pour actualiser les compteurs
+            setInterval(() => {
+                if (document.getElementById('attente-container').style.display !== 'none') {
+                    mettreAJourTableauAttente();
+                }
+            }, 60000);
+            
+            console.log("Application initialisée");
+        }
+
+        // Add these exports inside the module script just before the initialiserApp function
+        window.filtrerAppelsFunc = filtrerAppels;
+        window.voirDetailsAppelFunc = voirDetailsAppel;
+        window.modifierAppelFunc = modifierAppel;
+        window.supprimerAppelFunc = supprimerAppel;
+        window.selectionnerTypeAppelFunc = selectionnerTypeAppel;
+        window.selectionnerResultatAppelFunc = selectionnerResultatAppel;
+        window.ajusterDateRelanceFunc = ajusterDateRelance;
+        window.enregistrerAppelFunc = enregistrerAppel;
+        window.fermerModalFunc = fermerModal;
+        window.marquerCommeTermineFunc = marquerCommeTermine;
+        window.mettreEnAttenteFunc = mettreEnAttente;
+        window.ouvrirModalDateRelanceFunc = ouvrirModalDateRelance;
+        window.ajusterDateRelanceEditFunc = ajusterDateRelanceEdit;
+        window.sauvegarderNouvelleDateFunc = sauvegarderNouvelleDate;
+        window.rechercherAppelsFunc = rechercherAppels;
+        window.migrerLocalStorageVersFirebaseFunc = migrerLocalStorageVersFirebase;
+        window.rechercherPatientsFunc = rechercherPatients;
+        window.selectionnerPatientFunc = selectionnerPatient;
+        window.ajouterCommentairePatientFunc = ajouterCommentairePatient;
+        window.mettreAJourAppelFunc = mettreAJourAppel;
+        window.envoyerVersAgendaFunc = envoyerVersAgenda; // Exporter la fonction envoyerVersAgenda
+        window.confirmerEnvoiAgendaFunc = confirmerEnvoiAgenda; // Nouvelle fonction
+        window.ajusterAgendaDateFunc = ajusterAgendaDate; // Nouvelle fonction
+
+        // Exécuter l'initialisation au chargement de la page
+        window.addEventListener('DOMContentLoaded', function() {
+            initialiserApp();
+        });
+
+        // Fonction pour envoyer un appel vers l'agenda
+        async function envoyerVersAgenda(appelId) {
+            try {
+                // Trouver l'appel dans la liste
+                const appel = appels.find(a => a.id === appelId);
+                if (!appel) {
+                    throw new Error("Appel non trouvé");
+                }
+                
+                // Stocker l'ID de l'appel à envoyer dans une variable globale
+                window.appelAEnvoyerAgenda = appelId;
+                
+                // Préremplir les champs avec les données de l'appel
+                document.getElementById('agendaTitre').value = `Rappel: ${appel.nom}`;
+                
+                // Utiliser la date de relance si disponible, sinon la date actuelle + 1 jour
+                const dateDefault = appel.dateRelance ? new Date(appel.dateRelance) : new Date(Date.now() + 24*60*60*1000);
+                document.getElementById('agendaDate').value = dateDefault.toISOString().slice(0, 16);
+                
+                // Ouvrir le modal de confirmation
+                document.getElementById('envoyerAgendaModal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error("Erreur lors de la préparation de l'envoi vers l'agenda:", error);
+                afficherNotification("Erreur lors de la préparation", "error");
+            }
+        }
+
+        // Fonction pour ajuster la date dans le modal agenda
+        function ajusterAgendaDate(jours) {
+            const input = document.getElementById('agendaDate');
+            const date = new Date(input.value || Date.now());
+            date.setDate(date.getDate() + jours);
+            input.value = date.toISOString().slice(0, 16);
+        }
+        
+        // Fonction pour confirmer l'envoi vers l'agenda
+        async function confirmerEnvoiAgenda() {
+            try {
+                const appelId = window.appelAEnvoyerAgenda;
+                if (!appelId) {
+                    throw new Error("ID d'appel non trouvé");
+                }
+                
+                // Trouver l'appel dans la liste
+                const appel = appels.find(a => a.id === appelId);
+                if (!appel) {
+                    throw new Error("Appel non trouvé");
+                }
+                
+                // Récupérer les valeurs du formulaire
+                const titre = document.getElementById('agendaTitre').value.trim();
+                const dateDebut = document.getElementById('agendaDate').value;
+                
+                if (!titre) {
+                    afficherNotification("Veuillez saisir un titre pour le rendez-vous", "error");
+                    return;
+                }
+                
+                if (!dateDebut) {
+                    afficherNotification("Veuillez sélectionner une date pour le rendez-vous", "error");
+                    return;
+                }
+                
+                // Créer un événement pour l'agenda
+                const evenement = {
+                    titre: titre,
+                    description: appel.commentaire,
+                    dateDebut: dateDebut,
+                    contact: {
+                        nom: appel.nom,
+                        telephone: appel.telephone || ""
+                    },
+                    statut: "planifie",
+                    creeLe: new Date().toISOString(),
+                    source: "journal_appels",
+                    appelId: appelId,
+                    patientId: appel.patientId || null
+                };
+                
+                // Ajouter l'événement à la collection agenda dans Firebase
+                await addDoc(collection(db, "agenda"), evenement);
+                
+                // Mettre à jour l'appel pour indiquer qu'il a été envoyé à l'agenda
+                // et le marquer comme non-attente (terminé)
+                await updateDoc(doc(db, "appels", appelId), {
+                    enAttente: false, // Ne plus afficher dans les appels en attente
+                    envoye_agenda: true, // Marquer comme envoyé à l'agenda
+                    dateFin: new Date().toISOString(),
+                    commentaire: appel.commentaire + `\n\n[${new Date().toLocaleString()}] Envoyé à l'agenda de rappel pour le ${new Date(dateDebut).toLocaleString()}`
+                });
+                
+                // Fermer le modal
+                fermerModal('envoyerAgendaModal');
+                
+                // Réinitialiser la variable
+                window.appelAEnvoyerAgenda = null;
+                
+                afficherNotification("Élément envoyé à l'agenda avec succès", "success");
+            } catch (error) {
+                console.error("Erreur lors de l'envoi vers l'agenda:", error);
+                afficherNotification("Erreur lors de l'envoi vers l'agenda", "error");
+            }
+        }
+    </script>
+    <script>
+        // This makes the functions available globally
+        window.selectionnerTypeAppel = function(type) {
+            window.typeAppelSelectionne = type; // Use window scope consistently
+            
+            document.getElementById('btnAppelRecu').classList.toggle('btn-primary', type === 'recu');
+            document.getElementById('btnAppelPasse').classList.toggle('btn-primary', type === 'passe');
+            document.getElementById('btnAppelAutre').classList.toggle('btn-primary', type === 'autre');
+            
+            document.getElementById('formAppel').style.display = 'block';
+            document.getElementById('autreTypeGroup').style.display = type === 'autre' ? 'block' : 'none';
+            document.getElementById('appelSortantOptions').style.display = type === 'passe' ? 'block' : 'none';
+            document.getElementById('echecOptions').style.display = 'none';
+            
+            document.getElementById('contactName').focus();
+        };
+
+        // Export all the other functions needed by HTML elements
+        window.filtrerAppels = function(filtre) { 
+            if (window.filtrerAppelsFunc) window.filtrerAppelsFunc(filtre); 
+        };
+        window.voirDetailsAppel = function(id) { 
+            if (window.voirDetailsAppelFunc) window.voirDetailsAppelFunc(id); 
+        };
+        window.modifierAppel = function(id) { 
+            if (window.modifierAppelFunc) window.modifierAppelFunc(id); 
+        };
+        window.supprimerAppel = function(id) { 
+            if (window.supprimerAppelFunc) window.supprimerAppelFunc(id); 
+        };
+        window.selectionnerResultatAppel = function(resultat) { 
+            if (window.selectionnerResultatAppelFunc) window.selectionnerResultatAppelFunc(resultat); 
+        };
+        window.ajusterDateRelance = function(increment) { 
+            if (window.ajusterDateRelanceFunc) window.ajusterDateRelanceFunc(increment); 
+        };
+        window.enregistrerAppel = function() { 
+            if (window.enregistrerAppelFunc) window.enregistrerAppelFunc(); 
+            else console.error("enregistrerAppelFunc not found");
+        };
+        window.fermerModal = function(modalId) { 
+            if (window.fermerModalFunc) window.fermerModalFunc(modalId); 
+        };
+        window.marquerCommeTermine = function(id) { 
+            if (window.marquerCommeTermineFunc) window.marquerCommeTermineFunc(id); 
+        };
+        window.mettreEnAttente = function(id) {
+            if (window.mettreEnAttenteFunc) window.mettreEnAttenteFunc(id);
+            else console.error("mettreEnAttenteFunc not found");
+        };
+        window.ouvrirModalDateRelance = function(id) { 
+            if (window.ouvrirModalDateRelanceFunc) window.ouvrirModalDateRelanceFunc(id); 
+        };
+        window.ajusterDateRelanceEdit = function(jours) { 
+            if (window.ajusterDateRelanceEditFunc) window.ajusterDateRelanceEditFunc(jours); 
+        };
+        window.sauvegarderNouvelleDate = function() { 
+            if (window.sauvegarderNouvelleDateFunc) window.sauvegarderNouvelleDateFunc(); 
+        };
+        window.rechercherAppels = function() { 
+            if (window.rechercherAppelsFunc) window.rechercherAppelsFunc(); 
+        };
+        window.migrerLocalStorageVersFirebase = function() { 
+            if (window.migrerLocalStorageVersFirebaseFunc) window.migrerLocalStorageVersFirebaseFunc(); 
+        };
+        // Fonction pour envoyer vers l'agenda rendue disponible globalement
+        window.envoyerVersAgenda = function(id) { 
+            if (window.envoyerVersAgendaFunc) window.envoyerVersAgendaFunc(id);
+            else console.error("envoyerVersAgendaFunc not found");
+        };
+
+        // Export patient search related functions
+        window.rechercherPatients = function(terme) {
+            if (window.rechercherPatientsFunc) window.rechercherPatientsFunc(terme);
+        };
+        window.selectionnerPatient = function(patient) {
+            if (window.selectionnerPatientFunc) window.selectionnerPatientFunc(patient);
+        };
+        window.ajouterCommentairePatient = function(patientId, commentaire) {
+            if (window.ajouterCommentairePatientFunc) window.ajouterCommentairePatientFunc(patientId, commentaire);
+        };
+    
+        // Initialize context menu event handlers when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up context menu item handlers
+            document.getElementById('menuItemAttente').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.mettreEnAttente(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('menuItemTermine').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.marquerCommeTermine(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('menuItemDetails').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.voirDetailsAppel(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('menuItemModifier').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.modifierAppel(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+            
+            document.getElementById('menuItemSupprimer').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.supprimerAppel(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+            
+            // Ajout du gestionnaire pour l'option d'envoi vers l'agenda
+            document.getElementById('menuItemEnvoyerAgenda').addEventListener('click', function() {
+                if (window.ligneContextMenu) {
+                    window.envoyerVersAgenda(window.ligneContextMenu);
+                    document.getElementById('contextMenu').style.display = 'none';
+                }
+            });
+        });
+
+        window.mettreAJourAppel = function() {
+            if (window.mettreAJourAppelFunc) window.mettreAJourAppelFunc();
+            else console.error("mettreAJourAppelFunc not found");
+        };
+
+        // Dans la section <script> globale
+        window.envoyerVersAgenda = function(id) { 
+            if (window.envoyerVersAgendaFunc) window.envoyerVersAgendaFunc(id);
+            else console.error("envoyerVersAgendaFunc not found");
+        };
+        
+        window.confirmerEnvoiAgenda = function() {
+            if (window.confirmerEnvoiAgendaFunc) window.confirmerEnvoiAgendaFunc();
+            else console.error("confirmerEnvoiAgendaFunc not found");
+        };
+        
+        window.ajusterAgendaDate = function(jours) {
+            if (window.ajusterAgendaDateFunc) window.ajusterAgendaDateFunc(jours);
+            else console.error("ajusterAgendaDateFunc not found");
+        };
+    </script>
+</body>
+</html>

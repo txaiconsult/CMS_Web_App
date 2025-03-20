@@ -1,0 +1,16 @@
+# Fichiers système et temporaires
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Fichiers de configuration Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+ui-debug.log
+
+# Fichiers node.js (si vous installez des dépendances)
+node_modules/
+npm-debug.log
