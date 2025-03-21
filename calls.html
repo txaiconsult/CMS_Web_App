@@ -664,6 +664,10 @@
                         ...doc.data()
                     });
                 });
+                
+                // Trier les appels par timestamp en ordre décroissant (du plus récent au plus ancien)
+                appels.sort((a, b) => b.timestamp - a.timestamp);
+                
                 console.log(`${appels.length} appels chargés depuis Firebase`);
                 rafraichirTableauAppels();
             });
@@ -675,7 +679,7 @@
             const nouvelAppel = {
                 date: new Date().toLocaleDateString(),
                 heure: new Date().toLocaleTimeString(),
-                timestamp: Date.now(),
+                timestamp: Date.now(), // C'est cette ligne qui est cruciale
                 type: type,
                 autreType: type === 'autre' ? autreType : '',
                 nom: nom,
@@ -891,7 +895,10 @@
 
         // Afficher les appels filtrés
         function afficherAppelsFiltres(appelsFiltres) {
-            // Calculer le nombre de pages
+            // Trier les appels filtrés par timestamp en ordre décroissant
+            appelsFiltres.sort((a, b) => b.timestamp - a.timestamp);
+            
+            // Calculer le nombre de pages (supprimer la duplication)
             const nombrePages = Math.ceil(appelsFiltres.length / appelsParPage);
 
             // Vérifier que la page actuelle est valide
@@ -1141,7 +1148,7 @@
                 const nouvelAppel = {
                     date: new Date().toLocaleDateString(),
                     heure: new Date().toLocaleTimeString(),
-                    timestamp: Date.now(),
+                    timestamp: Date.now(), // C'est cette ligne qui est cruciale
                     type: window.typeAppelSelectionne,
                     autreType: window.typeAppelSelectionne === 'autre' ? autreType : '',
                     nom: nom,
