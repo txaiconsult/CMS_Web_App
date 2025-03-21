@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frise Chronologique - Essais Immédiats</title>
+  <style>
+    :root {
+      --color-primary: #3498db;
+      --color-primary-dark: #2980b9;
+      --color-secondary: #2c3e50;
+      --color-urgent: #e74c3c;
+      --color-warning: #f39c12;
+      --color-normal: #2ecc71;
+      --color-overdue: #7f8c8d;
+      --color-text: #333;
+      --color-text-light: #7f8c8d;
+      --color-background: #f5f5f5;
+      --color-card: #fff;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+      --border-radius: 8px;
+      --spacing-xs: 5px;
+      --spacing-sm: 8px;
+      --spacing-md: 15px;
+      --spacing-lg: 20px;
+      --spacing-xl: 30px;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+      margin: 0;
+      padding: var(--spacing-lg);
+      background-color: var(--color-background);
+      color: var(--color-text);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: var(--color-card);
+      padding: var(--spacing-lg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+    
+    h1, h2, h3 {
+      color: var(--color-secondary);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    p {
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .filters {
+      margin: var(--spacing-lg) 0;
+      display: flex;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      flex-grow: 1;
+      min-width: 200px;
+    }
+    
+    .filter-group label {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    
+    select {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: white;
+      flex-grow: 1;
+      min-width: 120px;
+    }
+    
+    button {
+      padding: var(--spacing-sm) var(--spacing-md);
+      background-color: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: var(--color-primary-dark);
+    }
+    
+    /* Timeline styles with improved responsiveness */
+    .timeline-container {
+      margin-top: var(--spacing-xl);
+      position: relative;
+      padding: var(--spacing-lg) 0;
+      overflow-x: auto; /* Allow horizontal scrolling on small screens */
+      min-height: 150px;
+    }
+    
+    .timeline-wrapper {
+      min-width: 600px; /* Minimum width to ensure visibility */
+      padding: 0 var(--spacing-lg);
+    }
+    
+    .timeline-axis {
+      height: 4px;
+      background-color: var(--color-secondary);
+      position: relative;
+      margin: 50px 0 30px;
+    }
+    
+    .timeline-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    
+    .timeline-label {
+      text-align: center;
+      font-size: 12px;
+      color: var(--color-text-light);
+      position: relative;
+    }
+    
+    .timeline-tick {
+      position: absolute;
+      width: 2px;
+      height: 10px;
+      background-color: var(--color-secondary);
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    /* Improved marker styles */
+    .timeline-marker {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      top: 50%;
+      cursor: pointer;
+      z-index: 2;
+      border: 2px solid white;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .timeline-marker:hover {
+      transform: translate(-50%, -50%) scale(1.3);
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+    
+    .marker-info {
+      position: absolute;
+      min-width: 180px;
+      padding: var(--spacing-sm) var(--spacing-md);
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: var(--shadow);
+      top: -55px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: none;
+      font-size: 13px;
+      text-align: center;
+      pointer-events: none;
+    }
+    
+    .timeline-marker:hover .marker-info {
+      display: block;
+    }
+    
+    /* Status colors */
+    .urgent {
+      background-color: var(--color-urgent);
+    }
+    
+    .warning {
+      background-color: var(--color-warning);
+    }
+    
+    .normal {
+      background-color: var(--color-normal);
+    }
+    
+    .overdue {
+      background-color: var(--color-overdue);
+    }
+    
+    /* Improved legend */
+    .legend {
+      margin-top: var(--spacing-xl);
+      display: flex;
+      gap: var(--spacing-lg);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+    
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    /* Enhanced patient details panel */
+    .patient-details {
+      margin-top: var(--spacing-xl);
+      padding: var(--spacing-lg);
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      border: 1px solid #ddd;
+      display: none;
+      position: relative;
+    }
+    
+    .patient-details h3 {
+      margin-top: 0;
+      color: var(--color-primary);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 1px solid #ddd;
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .patient-info {
+      margin-top: var(--spacing-md);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: var(--spacing-md);
+    }
+    
+    .info-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+    
+    .info-label {
+      font-weight: bold;
+      color: var(--color-text-light);
+      font-size: 14px;
+    }
+    
+    .info-value {
+      font-size: 16px;
+    }
+    
+    .patient-actions {
+      margin-top: var(--spacing-lg);
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: flex-end;
+    }
+    
+    .note-container {
+      grid-column: 1 / -1;
+      margin-top: var(--spacing-md);
+      padding: var(--spacing-md);
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    
+    /* Today marker */
+    .today-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background-color: var(--color-urgent);
+      z-index: 1;
+      transform: translateX(-50%);
+    }
+    
+    .today-label {
+      position: absolute;
+      bottom: -30px;
+      transform: translateX(-50%);
+      background-color: var(--color-urgent);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    
+    /* Enhanced notifications */
+    #notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: var(--border-radius);
+      color: #fff;
+      font-weight: bold;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1001;
+      max-width: 300px;
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    #notification.success { background-color: var(--color-normal); }
+    #notification.error { background-color: var(--color-urgent); }
+    #notification.info { background-color: var(--color-primary); }
+    
+    /* Stats container */
+    .stats-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-xl);
+    }
+    
+    .stat-card {
+      flex: 1;
+      min-width: 200px;
+      background-color: white;
+      padding: var(--spacing-md);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: bold;
+      margin: var(--spacing-xs) 0;
+    }
+    
+    .stat-label {
+      color: var(--color-text-light);
+      font-size: 14px;
+    }
+    
+    .stat-urgent .stat-value { color: var(--color-urgent); }
+    .stat-warning .stat-value { color: var(--color-warning); }
+    .stat-normal .stat-value { color: var(--color-normal); }
+    .stat-overdue .stat-value { color: var(--color-overdue); }
+    
+    /* Progress circle */
+    .progress-circle {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: var(--spacing-sm) auto;
+    }
+    
+    .progress-circle svg {
+      transform: rotate(-90deg);
+    }
+    
+    .progress-circle-bg {
+      fill: none;
+      stroke: #eee;
+      stroke-width: 8;
+    }
+    
+    .progress-circle-fill {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s;
+    }
+    
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .container {
+        padding: var(--spacing-md);
+      }
+      
+      .filter-group {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+      }
+      
+      select, button {
+        width: 100%;
+      }
+      
+      .legend {
+        justify-content: flex-start;
+      }
+      
+      .patient-info {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-container {
+        flex-direction: column;
+      }
+    }
+    
+    /* Quick filters */
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .quick-filter {
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      background-color: #eee;
+      transition: all 0.2s;
+    }
+    
+    .quick-filter:hover {
+      background-color: #ddd;
+    }
+    
+    .quick-filter.active {
+      background-color: var(--color-primary);
+      color: white;
+    }
+    
+    .quick-filter.urgent {
+      border: 1px solid var(--color-urgent);
+      color: var(--color-urgent);
+    }
+    
+    .quick-filter.urgent.active {
+      background-color: var(--color-urgent);
+      color: white;
+    }
+    
+    .quick-filter.warning {
+      border: 1px solid var(--color-warning);
+      color: var(--color-warning);
+    }
+    
+    .quick-filter.warning.active {
+      background-color: var(--color-warning);
+      color: white;
+    }
+
+    /* Patient cards section */
+    .all-patients-section {
+      margin-top: var(--spacing-xl);
+      border-top: 1px solid #ddd;
+      padding-top: var(--spacing-lg);
+    }
+    
+    .all-patients-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .patients-cards-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    
+    .patient-card {
+      background-color: var(--color-card);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: var(--spacing-md);
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .patient-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .patient-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-sm);
+    }
+    
+    .patient-card-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    .patient-card-type {
+      font-size: 12px;
+      color: var(--color-text-light);
+      margin-bottom: var(--spacing-xs);
+    }
+    
+    .patient-card-status {
+      font-size: 12px;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 12px;
+      color: white;
+    }
+    
+    .patient-card-details {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+      margin-top: var(--spacing-sm);
+    }
+    
+    .patient-card-detail {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    
+    .patient-card-label {
+      color: var(--color-text-light);
+    }
+    
+    .patient-card-value {
+      font-weight: 500;
+    }
+    
+    .patient-card-progress {
+      margin-top: var(--spacing-sm);
+      height: 6px;
+      background-color: #eee;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .patient-card-progress-bar {
+      height: 100%;
+    }
+    
+    .search-box {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      width: 250px;
+      max-width: 100%;
+    }
+    
+    .all-patients-filters {
+      display: flex;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+    
+    /* Responsive adjustments for patient cards section */
+    @media (max-width: 600px) {
+      .all-patients-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+      }
+      
+      .search-box {
+        width: 100%;
+      }
+      
+      .patients-cards-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Frise Chronologique des Essais Immédiats</h1>
+    <p>Visualisation des patients en essai immédiat avec métriques et alertes personnalisées</p>
+    
+    <!-- Statistiques globales -->
+    <div class="stats-container">
+      <div class="stat-card stat-urgent">
+        <div class="stat-label">Patients urgents</div>
+        <div class="stat-value" id="stat-urgent">0</div>
+        <div class="progress-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
+            <circle class="progress-circle-fill" cx="40" cy="40" r="36" stroke="#e74c3c" stroke-dasharray="226.19" stroke-dashoffset="226.19" id="urgent-progress"></circle>
+          </svg>
+          <div class="progress-text" id="urgent-percent">0%</div>
+        </div>
+        <div class="stat-label">≤ 5 jours restants</div>
+      </div>
+      
+      <div class="stat-card stat-warning">
+        <div class="stat-label">Patients en alerte</div>
+        <div class="stat-value" id="stat-warning">0</div>
+        <div class="progress-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
+            <circle class="progress-circle-fill" cx="40" cy="40" r="36" stroke="#f39c12" stroke-dasharray="226.19" stroke-dashoffset="226.19" id="warning-progress"></circle>
+          </svg>
+          <div class="progress-text" id="warning-percent">0%</div>
+        </div>
+        <div class="stat-label">6-10 jours restants</div>
+      </div>
+      
+      <div class="stat-card stat-normal">
+        <div class="stat-label">Patients normaux</div>
+        <div class="stat-value" id="stat-normal">0</div>
+        <div class="progress-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
+            <circle class="progress-circle-fill" cx="40" cy="40" r="36" stroke="#2ecc71" stroke-dasharray="226.19" stroke-dashoffset="226.19" id="normal-progress"></circle>
+          </svg>
+          <div class="progress-text" id="normal-percent">0%</div>
+        </div>
+        <div class="stat-label">> 10 jours restants</div>
+      </div>
+      
+      <div class="stat-card stat-overdue">
+        <div class="stat-label">Patients en dépassement</div>
+        <div class="stat-value" id="stat-overdue">0</div>
+        <div class="progress-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle class="progress-circle-bg" cx="40" cy="40" r="36"></circle>
+            <circle class="progress-circle-fill" cx="40" cy="40" r="36" stroke="#7f8c8d" stroke-dasharray="226.19" stroke-dashoffset="226.19" id="overdue-progress"></circle>
+          </svg>
+          <div class="progress-text" id="overdue-percent">0%</div>
+        </div>
+        <div class="stat-label">Délai dépassé</div>
+      </div>
+    </div>
+    
+    <!-- Filtres rapides -->
+    <div class="quick-filters">
+      <div class="quick-filter active" data-filter="all">Tous les patients</div>
+      <div class="quick-filter urgent" data-filter="urgent">Urgents</div>
+      <div class="quick-filter warning" data-filter="warning">En alerte</div>
+      <div class="quick-filter" data-filter="normal">Normaux</div>
+      <div class="quick-filter" data-filter="overdue">En dépassement</div>
+    </div>
+    
+    <div class="filters">
+      <div class="filter-group">
+        <label for="filter-view">Vue détaillée:</label>
+        <select id="filter-view">
+          <option value="all">Tous les patients</option>
+          <option value="urgent">Patients urgents (≤ 5 jours)</option>
+          <option value="warning">Patients en alerte (6-10 jours)</option>
+          <option value="normal">Patients normaux (> 10 jours)</option>
+          <option value="overdue">Patients en dépassement</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="timeline-range">Période:</label>
+        <select id="timeline-range">
+          <option value="30">30 jours</option>
+          <option value="45">45 jours</option>
+          <option value="60">60 jours</option>
+          <option value="90">90 jours</option>
+          <option value="custom">Personnalisée</option>
+        </select>
+      </div>
+      
+      <button id="refresh-timeline">Actualiser</button>
+    </div>
+    
+    <div class="timeline-container">
+      <div class="timeline-wrapper">
+        <div class="timeline-axis" id="timeline-axis">
+          <!-- Timeline markers will be added here dynamically -->
+        </div>
+        <div class="timeline-labels" id="timeline-labels">
+          <!-- Labels will be added here dynamically -->
+        </div>
+      </div>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color urgent"></div>
+        <span>Urgent (≤ 5 jours)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color warning"></div>
+        <span>Alerte (6-10 jours)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color normal"></div>
+        <span>Normal (> 10 jours)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color overdue"></div>
+        <span>Dépassé (< 0 jours)</span>
+      </div>
+    </div>
+    
+    <div class="patient-details" id="patient-details">
+      <h3>
+        Détails du patient
+        <button id="close-details" style="font-size: 20px; background: none; color: #34495e; border: none; cursor: pointer;">&times;</button>
+      </h3>
+      <div class="patient-info" id="patient-info">
+        <!-- Patient details will be added here dynamically -->
+      </div>
+      <div class="patient-actions">
+        <button id="edit-patient" style="background-color: #f39c12;">Modifier</button>
+        <button id="contact-patient" style="background-color: #3498db;">Contacter</button>
+      </div>
+    </div>
+    
+    <!-- Nouvelle section: Liste de tous les patients en essai immédiat -->
+    <div class="all-patients-section">
+      <div class="all-patients-title">
+        <h2>Liste des patients en essai immédiat</h2>
+        <input type="text" id="patient-search" class="search-box" placeholder="Rechercher un patient...">
+      </div>
+      
+      <div class="all-patients-filters">
+        <div class="filter-group">
+          <label for="sort-patients">Trier par:</label>
+          <select id="sort-patients">
+            <option value="days-asc">Jours restants (croissant)</option>
+            <option value="days-desc">Jours restants (décroissant)</option>
+            <option value="name">Nom</option>
+            <option value="date">Date de fin</option>
+          </select>
+        </div>
+        
+        <div class="quick-filters">
+          <div class="quick-filter active" data-card-filter="all">Tous</div>
+          <div class="quick-filter urgent" data-card-filter="urgent">Urgents</div>
+          <div class="quick-filter warning" data-card-filter="warning">En alerte</div>
+        </div>
+      </div>
+      
+      <div class="patients-cards-container" id="patients-cards-container">
+        <!-- Patient cards will be added here dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <div id="notification"></div>
+
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDqLgCObybog6fGl9FWe2i9uGu10C-pfIg",
+      authDomain: "ouioui-9cc8f.firebaseapp.com",
+      projectId: "ouioui-9cc8f",
+      storageBucket: "ouioui-9cc8f.appspot.com",
+      messagingSenderId: "661460129930",
+      appId: "1:661460129930:web:b46c5c2529c5585f557573"
+    };
+    
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // Global variables
+    let patients = [];
+    let selectedPatient = null;
+    let rangeInDays = 30; // Default range is 30 days
+    let patientStats = {
+      urgent: 0,
+      warning: 0,
+      normal: 0,
+      overdue: 0,
+      total: 0
+    };
+    
+    // DOM elements
+    const timelineAxis = document.getElementById('timeline-axis');
+    const timelineLabels = document.getElementById('timeline-labels');
+    const filterView = document.getElementById('filter-view');
+    const timelineRange = document.getElementById('timeline-range');
+    const refreshButton = document.getElementById('refresh-timeline');
+    const patientDetails = document.getElementById('patient-details');
+    const patientInfo = document.getElementById('patient-info');
+    const closeDetails = document.getElementById('close-details');
+    const editPatient = document.getElementById('edit-patient');
+    const contactPatient = document.getElementById('contact-patient');
+    const quickFilters = document.querySelectorAll('.quick-filter');
+    const patientsCardsContainer = document.getElementById('patients-cards-container');
+    const patientSearch = document.getElementById('patient-search');
+    const sortPatients = document.getElementById('sort-patients');
+    const cardFilters = document.querySelectorAll('[data-card-filter]');
+    
+    // Initialize the application
+    function initApp() {
+      setupFirebaseListeners();
+      setupEventListeners();
+      generateTimeline();
+    }
+    
+    // Set up Firebase real-time listeners with improved error handling
+    function setupFirebaseListeners() {
+      try {
+        onSnapshot(collection(db, "patients"), (snapshot) => {
+          patients = [];
+          snapshot.forEach((doc) => {
+            const patient = {
+              id: doc.id,
+              ...doc.data()
+            };
+            
+            // Only include patients in immediate trial with valid data
+            // AND exclude patients who are facturés or fin de suivi
+            if (patient.essaiImmediat && 
+                patient.joursRestants !== undefined && 
+                !patient.facturationDate &&  // Exclure les patients facturés
+                !patient.statutFin) {        // Exclure les patients en fin de suivi
+              patients.push(patient);
+            }
+          });
+          
+          // Update UI
+          updateStatistics();
+          updateTimeline();
+          updatePatientCards(); // Update the patient cards section
+        }, (error) => {
+          console.error("Firebase listener error:", error);
+          afficherNotification("Erreur de connexion à la base de données. Veuillez rafraîchir la page.", "error");
+        });
+      } catch (error) {
+        console.error("Firebase setup error:", error);
+        afficherNotification("Erreur d'initialisation. Veuillez rafraîchir la page.", "error");
+      }
+    }
+    
+    // Set up event listeners with improved UX
+    function setupEventListeners() {
+      filterView.addEventListener('change', () => {
+        // Update quick filters to match select value
+        updateQuickFilterSelection(filterView.value);
+        updateTimeline();
+      });
+      
+      timelineRange.addEventListener('change', handleRangeChange);
+      refreshButton.addEventListener('click', () => {
+        afficherNotification("Actualisation en cours...", "info", 1000);
+        setTimeout(() => {
+          updateStatistics();
+          updateTimeline();
+        }, 300);
+      });
+      
+      closeDetails.addEventListener('click', () => {
+        patientDetails.style.display = 'none';
+        selectedPatient = null;
+      });
+      
+      // Add handlers for quick filters
+      quickFilters.forEach(filter => {
+        filter.addEventListener('click', () => {
+          // Update all quick filter UI states
+          quickFilters.forEach(f => f.classList.remove('active'));
+          filter.classList.add('active');
+          
+          // Update select to match quick filter
+          const filterValue = filter.dataset.filter;
+          filterView.value = filterValue;
+          
+          // Update timeline
+          updateTimeline();
+        });
+      });
+      
+      // For demo - placeholder actions
+      editPatient.addEventListener('click', () => {
+        if (selectedPatient) {
+          afficherNotification(`Ouverture du formulaire d'édition pour ${selectedPatient.prenom} ${selectedPatient.nom}`, "info");
+        }
+      });
+      
+      contactPatient.addEventListener('click', () => {
+        if (selectedPatient) {
+          afficherNotification(`Préparation du contact pour ${selectedPatient.prenom} ${selectedPatient.nom}`, "info");
+        }
+      });
+      
+      // Add window resize handler for responsiveness
+      window.addEventListener('resize', () => {
+        // Redraw only if visible
+        if (patients.length > 0) {
+          generateTimeline();
+          updateTimeline();
+        }
+      });
+      
+      // Add listeners for patient cards section
+      patientSearch.addEventListener('input', () => {
+        updatePatientCards();
+      });
+      
+      sortPatients.addEventListener('change', () => {
+        updatePatientCards();
+      });
+      
+      // Card filters
+      cardFilters.forEach(filter => {
+        filter.addEventListener('click', () => {
+          cardFilters.forEach(f => f.classList.remove('active'));
+          filter.classList.add('active');
+          updatePatientCards();
+        });
+      });
+    }
+    
+    // Update quick filter selection based on dropdown
+    function updateQuickFilterSelection(value) {
+      quickFilters.forEach(filter => {
+        filter.classList.remove('active');
+        if (filter.dataset.filter === value) {
+          filter.classList.add('active');
+        }
+      });
+    }
+    
+    // Calculate and update statistics
+    function updateStatistics() {
+      // Reset counters
+      patientStats = {
+        urgent: 0,
+        warning: 0,
+        normal: 0,
+        overdue: 0,
+        total: patients.length
+      };
+      
+      // Count patients by category
+      patients.forEach(patient => {
+        const days = patient.joursRestants;
+        
+        if (days < 0) {
+          patientStats.overdue++;
+        } else if (days <= 5) {
+          patientStats.urgent++;
+        } else if (days <= 10) {
+          patientStats.warning++;
+        } else {
+          patientStats.normal++;
+        }
+      });
+      
+      // Update DOM elements
+      document.getElementById('stat-urgent').textContent = patientStats.urgent;
+      document.getElementById('stat-warning').textContent = patientStats.warning;
+      document.getElementById('stat-normal').textContent = patientStats.normal;
+      document.getElementById('stat-overdue').textContent = patientStats.overdue;
+      
+      // Calculate and update percentages
+      if (patientStats.total > 0) {
+        const urgentPercent = Math.round((patientStats.urgent / patientStats.total) * 100);
+        const warningPercent = Math.round((patientStats.warning / patientStats.total) * 100);
+        const normalPercent = Math.round((patientStats.normal / patientStats.total) * 100);
+        const overduePercent = Math.round((patientStats.overdue / patientStats.total) * 100);
+        
+        document.getElementById('urgent-percent').textContent = urgentPercent + '%';
+        document.getElementById('warning-percent').textContent = warningPercent + '%';
+        document.getElementById('normal-percent').textContent = normalPercent + '%';
+        document.getElementById('overdue-percent').textContent = overduePercent + '%';
+        
+        // Update progress circles
+        const circumference = 2 * Math.PI * 36; // 2πr
+        document.getElementById('urgent-progress').style.strokeDashoffset = 
+            circumference * (1 - (urgentPercent / 100));
+        document.getElementById('warning-progress').style.strokeDashoffset = 
+            circumference * (1 - (warningPercent / 100));
+        document.getElementById('normal-progress').style.strokeDashoffset = 
+            circumference * (1 - (normalPercent / 100));
+        document.getElementById('overdue-progress').style.strokeDashoffset = 
+            circumference * (1 - (overduePercent / 100));
+      }
+    }
+    
+    // Handle timeline range change with improved UX
+    function handleRangeChange() {
+      const value = timelineRange.value;
+      
+      if (value === 'custom') {
+        const customRange = prompt("Entrez le nombre de jours pour la frise chronologique:", "30");
+        if (customRange !== null && !isNaN(customRange) && customRange > 0) {
+          rangeInDays = parseInt(customRange);
+          afficherNotification(`Vue mise à jour pour ${rangeInDays} jours`, "success");
+        } else {
+          // Reset to default if invalid input
+          timelineRange.value = "30";
+          rangeInDays = 30;
+          afficherNotification("Valeur invalide, retour à 30 jours", "error");
+        }
+      } else {
+        rangeInDays = parseInt(value);
+      }
+      
+      generateTimeline();
+      updateTimeline();
+    }
+    
+    // Generate the timeline structure with improved readability
+    function generateTimeline() {
+      timelineAxis.innerHTML = '';
+      timelineLabels.innerHTML = '';
+      
+      // Add the today marker
+      const todayMarker = document.createElement('div');
+      todayMarker.className = 'today-marker';
+      todayMarker.style.left = '50%'; // Position today at center
+      
+      const todayLabel = document.createElement('div');
+      todayLabel.className = 'today-label';
+      todayLabel.textContent = "Aujourd'hui";
+      todayLabel.style.left = '50%';
+      
+      timelineAxis.appendChild(todayMarker);
+      timelineAxis.appendChild(todayLabel);
+      
+      // Generate labels for the timeline
+      const labelCount = Math.min(7, rangeInDays); // Limit number of labels for readability
+      const interval = rangeInDays / (labelCount - 1);
+      
+      for (let i = 0; i < labelCount; i++) {
+        const label = document.createElement('div');
+        label.className = 'timeline-label';
+        
+        // Calculate days relative to today
+        const days = Math.round(-rangeInDays/2 + i * interval);
+        
+        // Create date object for this label
+        const date = new Date();
+        date.setDate(date.getDate() + days);
+        
+        // Format the label text
+        let labelText = '';
+        if (days === 0) {
+          labelText = "Aujourd'hui";
+        } else if (days < 0) {
+          labelText = `J-${Math.abs(days)}`;
+        } else {
+          labelText = `J+${days}`;
+        }
+        
+        label.innerHTML = `
+          <div class="timeline-tick"></div>
+          ${labelText}<br>
+          <small>${date.toLocaleDateString()}</small>
+        `;
+        
+        // Position the label
+        const percent = (i / (labelCount - 1)) * 100;
+        label.style.width = `${100/labelCount}%`;
+        label.style.left = `${percent}%`;
+        label.style.transform = 'translateX(-50%)';
+        
+        timelineLabels.appendChild(label);
+      }
+    }
+    
+    // Update the timeline with patient markers with improved information density
+    function updateTimeline() {
+      // Clear existing patient markers
+      const existingMarkers = document.querySelectorAll('.timeline-marker');
+      existingMarkers.forEach(marker => marker.remove());
+      
+      // Get the filtered patients
+      const filteredPatients = filterPatients();
+      
+      // Create marker for each patient
+      filteredPatients.forEach(patient => {
+        createPatientMarker(patient);
+      });
+      
+      // Show notification with count
+      afficherNotification(`${filteredPatients.length} patients affichés sur la frise`, "info");
+    }
+    
+    // Filter patients based on selected view
+    function filterPatients() {
+      const filter = filterView.value;
+      
+      if (filter === 'all') {
+        return patients;
+      }
+      
+      return patients.filter(patient => {
+        const days = patient.joursRestants;
+        
+        if (filter === 'urgent' && days <= 5 && days >= 0) {
+          return true;
+        }
+        if (filter === 'warning' && days > 5 && days <= 10) {
+          return true;
+        }
+        if (filter === 'normal' && days > 10) {
+          return true;
+        }
+        if (filter === 'overdue' && days < 0) {
+          return true;
+        }
+        
+        return false;
+      });
+    }
+    
+    // Create marker for a patient on the timeline with enhanced information
+    function createPatientMarker(patient) {
+      const marker = document.createElement('div');
+      marker.className = 'timeline-marker';
+      
+      // Determine marker color based on days left
+      const days = patient.joursRestants;
+      let statusClass = 'normal';
+      
+      if (days < 0) {
+        statusClass = 'overdue';
+      } else if (days <= 5) {
+        statusClass = 'urgent';
+      } else if (days <= 10) {
+        statusClass = 'warning';
+      }
+      
+      marker.classList.add(statusClass);
+      
+      // Calculate position on the timeline
+      // Map days to position: -rangeInDays/2 (left) to +rangeInDays/2 (right)
+      const halfRange = rangeInDays / 2;
+      let position = 50 + ((days / halfRange) * 50); // Convert to percentage
+      
+      // Cap position within visible range (0-100%)
+      position = Math.max(0, Math.min(position, 100));
+      
+      marker.style.left = `${position}%`;
+      
+      // Create info tooltip with more useful information
+      const markerInfo = document.createElement('div');
+      markerInfo.className = 'marker-info';
+      
+      // Format days display
+      let daysDisplay = '';
+      if (days < 0) {
+        daysDisplay = `<strong style="color: #e74c3c;">Dépassé de ${Math.abs(days)} jours</strong>`;
+      } else {
+        daysDisplay = `<strong>${days} jours restants</strong>`;
+      }
+      
+      // Format end date
+      let endDate = 'Non définie';
+      if (patient.dateEssaiImmediat) {
+        const startDate = new Date(patient.dateEssaiImmediat.seconds * 1000);
+        const endDateObj = new Date(startDate);
+        endDateObj.setDate(endDateObj.getDate() + (patient.dureeEssai || 30));
+        endDate = endDateObj.toLocaleDateString();
+      }
+      
+      markerInfo.innerHTML = `
+        <div style="font-weight: bold;">${patient.prenom} ${patient.nom}</div>
+        ${daysDisplay}
+        <div style="font-size: 11px; margin-top: 3px;">Fin: ${endDate}</div>
+        ${patient.type ? `<div style="font-size: 11px;">${patient.type}</div>` : ''}
+        ${patient.noteEssaiImmediat ? `<div style="font-size: 11px; opacity: 0.8; font-style: italic;">Note disponible</div>` : ''}
+      `;
+      
+      marker.appendChild(markerInfo);
+      
+      // Add click event to show details
+      marker.addEventListener('click', () => {
+        showPatientDetails(patient);
+      });
+      
+      timelineAxis.appendChild(marker);
+    }
+    
+    // Show detailed information for a patient with improved layout and more data
+    function showPatientDetails(patient) {
+      selectedPatient = patient;
+      
+      // Format dates for display
+      let startDate = 'Non spécifiée';
+      let endDate = 'Non spécifiée';
+      
+      if (patient.dateEssaiImmediat) {
+        const start = new Date(patient.dateEssaiImmediat.seconds * 1000);
+        startDate = start.toLocaleDateString();
+        
+        // Calculate end date based on duration
+        const end = new Date(start);
+        end.setDate(end.getDate() + (patient.dureeEssai || 30));
+        endDate = end.toLocaleDateString();
+      }
+      
+      // Format days left/overdue display
+      let daysDisplay = '';
+      if (patient.joursRestants < 0) {
+        daysDisplay = `<span style="color: #e74c3c;">Dépassé de ${Math.abs(patient.joursRestants)} jours</span>`;
+      } else {
+        const colorClass = patient.joursRestants <= 5 ? 'color: #e74c3c;' : 
+                          patient.joursRestants <= 10 ? 'color: #f39c12;' : 
+                          'color: #2ecc71;';
+        
+        daysDisplay = `<span style="${colorClass}">${patient.joursRestants} jours restants</span>`;
+      }
+      
+      // Calculate progress percentage
+      let progressPercent = 0;
+      if (patient.dateEssaiImmediat && patient.dureeEssai) {
+        const totalDays = patient.dureeEssai;
+        const daysElapsed = totalDays - patient.joursRestants;
+        progressPercent = Math.min(100, Math.max(0, Math.round((daysElapsed / totalDays) * 100)));
+      }
+      
+      // Generate HTML for patient info with improved layout and more information
+      patientInfo.innerHTML = `
+        <div class="info-group">
+          <span class="info-label">Nom complet</span>
+          <span class="info-value">${patient.prenom} ${patient.nom}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Type de patient</span>
+          <span class="info-value">${patient.type || 'Non spécifié'}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Contact</span>
+          <span class="info-value">${patient.telephone || patient.email || 'Non spécifié'}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Début d'essai</span>
+          <span class="info-value">${startDate}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Fin d'essai prévue</span>
+          <span class="info-value">${endDate}</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Durée d'essai</span>
+          <span class="info-value">${patient.dureeEssai || 30} jours</span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Progression</span>
+          <span class="info-value">
+            <div style="width: 100%; background-color: #eee; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px;">
+              <div style="width: ${progressPercent}%; background-color: ${patient.joursRestants < 0 ? '#e74c3c' : '#3498db'}; height: 100%;"></div>
+            </div>
+            <div style="font-size: 12px; margin-top: 3px;">${progressPercent}% complété</div>
+          </span>
+        </div>
+        
+        <div class="info-group">
+          <span class="info-label">Jours restants</span>
+          <span class="info-value">${daysDisplay}</span>
+        </div>
+      `;
+      
+      // Add communication log placeholder for future enhancement
+      patientInfo.innerHTML += `
+        <div class="info-group" style="grid-column: 1 / -1;">
+          <span class="info-label">Dernière communication</span>
+          <span class="info-value" style="font-style: italic;">${patient.lastContact || 'Aucune communication enregistrée'}</span>
+        </div>
+      `;
+      
+      // Add note if exists
+      if (patient.noteEssaiImmediat) {
+        patientInfo.innerHTML += `
+          <div class="note-container">
+            <div class="info-label">Note</div>
+            <div class="info-value" style="white-space: pre-wrap; margin-top: 5px;">${patient.noteEssaiImmediat}</div>
+          </div>
+        `;
+      }
+      
+      // Show patient details panel
+      patientDetails.style.display = 'block';
+      
+      // Scroll to patient details if not visible
+      const detailsRect = patientDetails.getBoundingClientRect();
+      const isVisible = (
+        detailsRect.top >= 0 &&
+        detailsRect.bottom <= window.innerHeight
+      );
+      
+      if (!isVisible) {
+        patientDetails.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    
+    // Display notification with improved animation
+    function afficherNotification(message, type = "info", duration = 3000) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = type;
+      notification.style.display = "block";
+      
+      // Hide notification after specified duration
+      setTimeout(() => {
+        notification.style.opacity = "0";
+        setTimeout(() => {
+          notification.style.display = "none";
+          notification.style.opacity = "1";
+        }, 300);
+      }, duration);
+    }
+    
+    // Update patient cards section
+    function updatePatientCards() {
+      patientsCardsContainer.innerHTML = '';
+      
+      // Get search term
+      const searchTerm = patientSearch.value.toLowerCase().trim();
+      
+      // Get active filter
+      const activeFilter = document.querySelector('[data-card-filter].active').dataset.cardFilter;
+      
+      // Filter patients
+      let filteredPatients = patients.filter(patient => {
+        // Search filter
+        const nameMatch = `${patient.prenom} ${patient.nom}`.toLowerCase().includes(searchTerm);
+        
+        // Status filter
+        let statusMatch = true;
+        const days = patient.joursRestants;
+        
+        if (activeFilter === 'urgent') {
+          statusMatch = days >= 0 && days <= 5;
+        } else if (activeFilter === 'warning') {
+          statusMatch = days > 5 && days <= 10;
+        }
+        
+        return nameMatch && statusMatch;
+      });
+      
+      // Sort patients
+      const sortOption = sortPatients.value;
+      
+      filteredPatients.sort((a, b) => {
+        switch(sortOption) {
+          case 'days-asc':
+            return a.joursRestants - b.joursRestants;
+          case 'days-desc':
+            return b.joursRestants - a.joursRestants;
+          case 'name':
+            return `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`);
+          case 'date':
+            // Sort by end date
+            const aEndDate = calculateEndDate(a);
+            const bEndDate = calculateEndDate(b);
+            return aEndDate - bEndDate;
+          default:
+            return a.joursRestants - b.joursRestants;
+        }
+      });
+      
+      // Create card for each patient
+      if (filteredPatients.length === 0) {
+        patientsCardsContainer.innerHTML = '<p>Aucun patient ne correspond à votre recherche.</p>';
+        return;
+      }
+      
+      filteredPatients.forEach(patient => {
+        createPatientCard(patient);
+      });
+    }
+    
+    // Calculate end date for a patient
+    function calculateEndDate(patient) {
+      if (!patient.dateEssaiImmediat) return new Date();
+      
+      const startDate = new Date(patient.dateEssaiImmediat.seconds * 1000);
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + (patient.dureeEssai || 30));
+      
+      return endDate;
+    }
+    
+    // Create patient card
+    function createPatientCard(patient) {
+      const card = document.createElement('div');
+      card.className = 'patient-card';
+      
+      // Determine card status color
+      const days = patient.joursRestants;
+      let statusClass = 'normal';
+      let statusText = 'Normal';
+      
+      if (days < 0) {
+        statusClass = 'overdue';
+        statusText = 'Dépassé';
+      } else if (days <= 5) {
+        statusClass = 'urgent';
+        statusText = 'Urgent';
+      } else if (days <= 10) {
+        statusClass = 'warning';
+        statusText = 'Alerte';
+      }
+      
+      // Format end date
+      const endDate = calculateEndDate(patient);
+      const formattedEndDate = endDate.toLocaleDateString();
+      
+      // Calculate progress percentage
+      let progressPercent = 0;
+      if (patient.dateEssaiImmediat && patient.dureeEssai) {
+        const totalDays = patient.dureeEssai;
+        const daysElapsed = totalDays - patient.joursRestants;
+        progressPercent = Math.min(100, Math.max(0, Math.round((daysElapsed / totalDays) * 100)));
+      }
+      
+      card.innerHTML = `
+        <div class="patient-card-header">
+          <div>
+            <div class="patient-card-name">${patient.prenom} ${patient.nom}</div>
+            <div class="patient-card-type">${patient.type || 'Patient'}</div>
+          </div>
+          <span class="patient-card-status" style="background-color: var(--color-${statusClass})">
+            ${statusText}
+          </span>
+        </div>
+        
+        <div class="patient-card-details">
+          <div class="patient-card-detail">
+            <span class="patient-card-label">Fin d'essai:</span>
+            <span class="patient-card-value">${formattedEndDate}</span>
+          </div>
+          <div class="patient-card-detail">
+            <span class="patient-card-label">Jours restants:</span>
+            <span class="patient-card-value" style="color: var(--color-${statusClass})">
+              ${days < 0 ? `Dépassé de ${Math.abs(days)} j` : `${days} jours`}
+            </span>
+          </div>
+        </div>
+        
+        <div class="patient-card-progress">
+          <div class="patient-card-progress-bar" style="width: ${progressPercent}%; background-color: var(--color-${statusClass})"></div>
+        </div>
+      `;
+      
+      // Add click event to show details
+      card.addEventListener('click', () => {
+        showPatientDetails(patient);
+        
+        // Scroll to patient details
+        patientDetails.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      
+      patientsCardsContainer.appendChild(card);
+    }
+    
+    // Initialize the app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
