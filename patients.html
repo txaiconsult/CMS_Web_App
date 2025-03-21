@@ -214,6 +214,16 @@
   
   <!-- Patients List Tab -->
   <div id="patients-tab" class="tab-content active">
+    <div style="margin-bottom: 15px; margin-top: 10px; display: flex; justify-content: flex-end; gap: 15px;">
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="checkbox" id="masquer-factures-liste"> 
+        <span style="margin-left: 5px;">Masquer les patients facturés</span>
+      </label>
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="checkbox" id="masquer-fin-suivi-liste"> 
+        <span style="margin-left: 5px;">Masquer les patients en fin de suivi</span>
+      </label>
+    </div>
     <table id="table-patients">
       <thead>
         <tr>
@@ -676,6 +686,33 @@
     updateDaysLeft();
     // Mise à jour quotidienne
     setInterval(updateDaysLeft, 86400000); // 24h en millisecondes
+    
+    // Initialize hiding preference for patients
+    const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+    if (masquerFacturesGlobal) {
+      const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+      if (hideFacturesPreference !== null) {
+        masquerFacturesGlobal.checked = hideFacturesPreference === 'true';
+      }
+    }
+    
+    // Initialize hiding preference for patients in the main list
+    const masquerFacturesListe = document.getElementById('masquer-factures-liste');
+    if (masquerFacturesListe) {
+      const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+      if (hideFacturesPreference !== null) {
+        masquerFacturesListe.checked = hideFacturesPreference === 'true';
+      }
+    }
+    
+    // Initialize hiding preference for fin de suivi patients
+    const masquerFinSuiviListe = document.getElementById('masquer-fin-suivi-liste');
+    if (masquerFinSuiviListe) {
+      const hideFinSuiviPreference = localStorage.getItem('hide_fin_suivi_preference');
+      if (hideFinSuiviPreference !== null) {
+        masquerFinSuiviListe.checked = hideFinSuiviPreference === 'true';
+      }
+    }
   }
   
   // Set up Firebase real-time listeners
@@ -925,12 +962,13 @@
   
   // Toggle visibility of factured patients
   function toggleHideFactures() {
-    const hideFactures = document.getElementById('masquer-factures').checked;
+    const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+    const hideFactures = masquerFacturesGlobal.checked;
     
-    // Sauvegarder la préférence
+    // Save preference
     localStorage.setItem('hide_factures_preference', hideFactures);
     
-    // Mettre à jour l'affichage
+    // Update display
     renderPatientsList();
   }
   
@@ -1119,6 +1157,60 @@
         }
       }
     });
+    
+    // Add event listener for global checkbox
+    const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+    if (masquerFacturesGlobal) {
+      masquerFacturesGlobal.addEventListener('change', toggleHideFactures);
+      
+      // Set initial state based on saved preference
+      const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+      if (hideFacturesPreference !== null) {
+        masquerFacturesGlobal.checked = hideFacturesPreference === 'true';
+      }
+    }
+    
+    // Add event listener for liste checkbox
+    const masquerFacturesListe = document.getElementById('masquer-factures-liste');
+    if (masquerFacturesListe) {
+      masquerFacturesListe.addEventListener('change', function() {
+        // Synchronize with global checkbox
+        const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+        if (masquerFacturesGlobal) {
+          masquerFacturesGlobal.checked = this.checked;
+        }
+        
+        // Save preference
+        localStorage.setItem('hide_factures_preference', this.checked);
+        
+        // Update display
+        renderPatientsList();
+      });
+      
+      // Set initial state based on saved preference
+      const hideFacturesPreference = localStorage.getItem('hide_factures_preference');
+      if (hideFacturesPreference !== null) {
+        masquerFacturesListe.checked = hideFacturesPreference === 'true';
+      }
+    }
+    
+    // Add event listener for liste checkbox (fin de suivi)
+    const masquerFinSuiviListe = document.getElementById('masquer-fin-suivi-liste');
+    if (masquerFinSuiviListe) {
+      masquerFinSuiviListe.addEventListener('change', function() {
+        // Save preference
+        localStorage.setItem('hide_fin_suivi_preference', this.checked);
+        
+        // Update display
+        renderPatientsList();
+      });
+      
+      // Set initial state based on saved preference
+      const hideFinSuiviPreference = localStorage.getItem('hide_fin_suivi_preference');
+      if (hideFinSuiviPreference !== null) {
+        masquerFinSuiviListe.checked = hideFinSuiviPreference === 'true';
+      }
+    }
   }
   
   // Diode context menu element
@@ -1147,13 +1239,49 @@
   function renderPatientsList() {
     listePatients.innerHTML = '';
     
-    // Check if we should hide factured patients
-    const hideFactures = document.getElementById('masquer-factures')?.checked || false;
+    // Check if we should hide factured patients (check both checkboxes)
+    const masquerFacturesListe = document.getElementById('masquer-factures-liste');
+    const masquerFacturesGlobal = document.getElementById('masquer-factures-global');
+    const masquerFinSuiviListe = document.getElementById('masquer-fin-suivi-liste');
+    
+    // Get hiding preferences
+    const hideFactures = (masquerFacturesListe && masquerFacturesListe.checked) || 
+                         (masquerFacturesGlobal && masquerFacturesGlobal.checked);
+    const hideFinSuivi = masquerFinSuiviListe && masquerFinSuiviListe.checked;
     
     // Filter patients if needed
-    const patientsToShow = hideFactures 
-      ? patients.filter(p => !p.facturationDate)
-      : patients;
+    let patientsToShow = patients;
+    
+    if (hideFactures && hideFinSuivi) {
+      // Hide both factures and fin de suivi
+      patientsToShow = patients.filter(p => !p.facturationDate && !p.statutFin);
+    } else if (hideFactures) {
+      // Only hide factures
+      patientsToShow = patients.filter(p => !p.facturationDate);
+    } else if (hideFinSuivi) {
+      // Only hide fin de suivi
+      patientsToShow = patients.filter(p => !p.statutFin);
+    }
+    
+    // Sort patients by creation date (most recent first)
+    patientsToShow = patientsToShow.sort((a, b) => {
+      // Handle cases where dateCreation might be missing
+      if (!a.dateCreation) return 1;  // a goes to the end
+      if (!b.dateCreation) return -1; // b goes to the end
+      
+      // If dateCreation is a Firestore timestamp object
+      if (a.dateCreation.seconds && b.dateCreation.seconds) {
+        return b.dateCreation.seconds - a.dateCreation.seconds;
+      }
+      
+      // If dateCreation is a JavaScript Date object
+      if (a.dateCreation instanceof Date && b.dateCreation instanceof Date) {
+        return b.dateCreation.getTime() - a.dateCreation.getTime();
+      }
+      
+      // Default case
+      return 0;
+    });
     
     patientsToShow.forEach(patient => {
       const row = document.createElement('tr');
@@ -2482,3 +2610,4 @@
 </script>
 </body>
 </html>
+<!-- Force rebuild: Fri Mar 21 15:23:29 CET 2025 -->
